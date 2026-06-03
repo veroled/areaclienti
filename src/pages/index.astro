@@ -1,0 +1,353 @@
+---
+/**
+ * Portale clienti — areaclienti.veroledsrl.com  (Fleet Monitor PRO)
+ * App shell stile Yodeck: sidebar (Schermi · Contenuti · Playlist · Programmazione ·
+ * Allarmi · Impostazioni) + area di lavoro. Login cliente + dashboard schermi VNNOX.
+ * Pagina privata (noindex). Parla con /api/* (Pages Functions).
+ * NB: le Functions girano SOLO in produzione (o con `wrangler pages dev`), non in `astro dev`.
+ */
+export const prerender = true;
+---
+
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Fleet Monitor PRO · VeroLED</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #22a0c2; --accent-2: #89d155;
+      --bg: #07090c; --bg-deep: #0d1014; --bg-side: #0a0d11;
+      --text: #e8e8e8; --text-muted: #9aa0a6;
+      --border: rgba(255, 255, 255, 0.08);
+      --crit: #e5484d; --warn: #f5a623; --ok: #89d155;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: 'Open Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+    }
+    .hidden { display: none !important; }
+
+    /* ── LOGIN ── */
+    .login { max-width: 380px; margin: 8vh auto 0; padding: 0 1.25rem; }
+    .brand { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.5rem; color: #fff; line-height: 1.1; }
+    .brand small { font-family: 'Open Sans'; font-style: normal; font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); display: block; margin-top: 3px; }
+    .login h1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 2.2rem; margin: 2.2rem 0 .4rem; color: #fff; }
+    .login p { color: var(--text-muted); margin: 0 0 1.8rem; font-size: .92rem; }
+    label { display: block; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 .4rem; }
+    input[type=text], input[type=password] { width: 100%; padding: .8rem .9rem; margin-bottom: 1.1rem; background: var(--bg-deep); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: .95rem; font-family: inherit; }
+    input:focus { outline: none; border-color: var(--accent); }
+    .btn { width: 100%; padding: .9rem; background: var(--accent); color: var(--bg); border: 0; border-radius: 4px; font-weight: 600; letter-spacing: .04em; cursor: pointer; font-size: .9rem; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .err { color: var(--crit); font-size: .85rem; min-height: 1.2em; margin-bottom: .6rem; }
+
+    /* ── APP SHELL ── */
+    .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+    .side { background: var(--bg-side); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.3rem 0; position: sticky; top: 0; height: 100vh; }
+    .side .brand { padding: 0 1.4rem 1.4rem; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: .4rem .6rem; flex: 1; }
+    .nav a { display: flex; align-items: center; gap: .7rem; padding: .62rem .8rem; border-radius: 6px; color: var(--text-muted); text-decoration: none; font-size: .9rem; cursor: pointer; }
+    .nav a:hover { background: rgba(255,255,255,.04); color: var(--text); }
+    .nav a.active { background: rgba(34,160,194,.14); color: var(--accent); }
+    .nav a svg { width: 17px; height: 17px; flex: 0 0 17px; }
+    .nav .soon { margin-left: auto; font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); border: 1px solid var(--border); padding: 1px 5px; border-radius: 3px; }
+    .side-foot { padding: .8rem 1.4rem 0; border-top: 1px solid var(--border); margin-top: .6rem; }
+    .side-foot .who { font-size: .82rem; color: var(--text); margin-bottom: .5rem; }
+    .ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: .45rem .8rem; border-radius: 4px; cursor: pointer; font-size: .78rem; }
+    .ghost:hover { color: var(--text); border-color: var(--accent); }
+
+    .main { min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1.3rem 1.8rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 5; }
+    .topbar h2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 1.7rem; margin: 0; color: #fff; }
+    .badge-demo { font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: #07090c; background: var(--warn); padding: 3px 8px; border-radius: 3px; font-weight: 600; }
+    .content { padding: 1.6rem 1.8rem 4rem; }
+    .hint { color: var(--text-muted); font-size: .85rem; margin: 0 0 1.2rem; }
+
+    /* card schermi */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    .card { background: var(--bg-deep); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; }
+    .card.off { opacity: .72; }
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+    .card h3 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 1.25rem; margin: 0 0 .15rem; color: #fff; line-height: 1.15; }
+    .card .loc { font-size: .75rem; color: var(--text-muted); }
+    .dot { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+    .dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+    .dot.online { color: var(--ok); } .dot.online::before { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .dot.offline { color: var(--crit); } .dot.offline::before { background: var(--crit); }
+    .meta { display: flex; gap: 1.1rem; margin: 1rem 0 .2rem; font-size: .78rem; color: var(--text-muted); flex-wrap: wrap; }
+    .meta b { color: var(--text); font-weight: 600; }
+    .ctrl { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    .ctrl-row { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
+    .ctrl-row label { margin: 0; flex: 0 0 76px; }
+    input[type=range] { flex: 1; accent-color: var(--accent); }
+    .bval { font-size: .8rem; color: var(--text); width: 38px; text-align: right; }
+    .mini { font-size: .76rem; padding: .42rem .7rem; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; }
+    .mini:hover { color: var(--text); border-color: var(--accent); }
+    .mini.danger:hover { color: var(--crit); border-color: var(--crit); }
+    .alarms { margin-top: .9rem; display: flex; flex-direction: column; gap: .4rem; }
+    .alarm { font-size: .78rem; padding: .5rem .65rem; border-radius: 4px; border-left: 3px solid var(--warn); background: rgba(245,166,35,.08); color: #f0d9b0; }
+    .alarm.critical { border-left-color: var(--crit); background: rgba(229,72,77,.08); color: #f3b6b8; }
+    .alarm .src { display: block; font-size: .68rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* placeholder sezioni in arrivo */
+    .soon-box { max-width: 560px; background: var(--bg-deep); border: 1px dashed var(--border); border-radius: 10px; padding: 2rem; }
+    .soon-box h3 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 1.5rem; margin: 0 0 .6rem; color: #fff; }
+    .soon-box p { color: var(--text-muted); font-size: .9rem; line-height: 1.6; margin: 0 0 1rem; }
+    .soon-box ul { color: var(--text-muted); font-size: .88rem; line-height: 1.7; margin: 0; padding-left: 1.1rem; }
+    .empty { color: var(--text-muted); text-align: center; padding: 4rem 1rem; }
+
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; flex-direction: column; }
+      .nav { flex-direction: row; overflow-x: auto; flex-wrap: nowrap; }
+      .nav a { white-space: nowrap; } .nav .soon { display: none; }
+      .topbar, .content { padding-left: 1.1rem; padding-right: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <section id="login" class="login hidden">
+    <div class="brand">Fleet Monitor <em>PRO</em><small>VeroLED · Area Clienti</small></div>
+    <h1>Accedi al portale</h1>
+    <p>Gestisci i tuoi LED wall: stato, contenuti e controllo da remoto.</p>
+    <form id="login-form">
+      <label for="identifier">P.IVA o email</label>
+      <input type="text" id="identifier" autocomplete="username" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required />
+      <div class="err" id="login-err"></div>
+      <button class="btn" id="login-btn" type="submit">accedi</button>
+    </form>
+  </section>
+
+  <!-- APP -->
+  <div id="app" class="app hidden">
+    <aside class="side">
+      <div class="brand">Fleet Monitor <em>PRO</em><small>VeroLED · Area Clienti</small></div>
+      <nav class="nav" id="nav">
+        <a data-sec="schermi" class="active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Schermi
+        </a>
+        <a data-sec="contenuti">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          Contenuti <span class="soon">presto</span>
+        </a>
+        <a data-sec="playlist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 6h13M8 12h13M3 18h18M3 6h.01M3 12h.01"/></svg>
+          Playlist <span class="soon">presto</span>
+        </a>
+        <a data-sec="programmazione">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Programmazione <span class="soon">presto</span>
+        </a>
+        <a data-sec="allarmi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Allarmi
+        </a>
+        <a data-sec="impostazioni">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.7 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9.4a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9.4a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+          Impostazioni
+        </a>
+      </nav>
+      <div class="side-foot">
+        <div class="who" id="who"></div>
+        <button class="ghost" id="logout">esci</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <h2 id="sec-title">Schermi</h2>
+        <span id="demo" class="badge-demo hidden">modalità demo</span>
+      </div>
+      <div class="content">
+        <section data-view="schermi">
+          <p class="hint" id="schermi-hint">Caricamento…</p>
+          <div class="grid" id="grid"></div>
+        </section>
+
+        <section data-view="allarmi" class="hidden">
+          <p class="hint" id="allarmi-hint"></p>
+          <div class="alarms" id="allarmi-list"></div>
+        </section>
+
+        <section data-view="contenuti" class="hidden">
+          <div class="soon-box">
+            <h3>Libreria contenuti — in arrivo</h3>
+            <p>Carica immagini, video, PDF e pagine web da pubblicare sui tuoi schermi. I file verranno archiviati e pubblicati su VNNOX Media.</p>
+            <ul><li>Upload con anteprima</li><li>Pubblicazione diretta su uno o più schermi</li><li>Storico delle pubblicazioni</li></ul>
+          </div>
+        </section>
+        <section data-view="playlist" class="hidden">
+          <div class="soon-box">
+            <h3>Playlist — in arrivo</h3>
+            <p>Componi sequenze di contenuti con durate e transizioni, in stile drag-and-drop, e assegnale agli schermi.</p>
+            <ul><li>Ordina i contenuti e imposta le durate</li><li>Anteprima nel browser</li><li>Assegna la playlist a gruppi di schermi</li></ul>
+          </div>
+        </section>
+        <section data-view="programmazione" class="hidden">
+          <div class="soon-box">
+            <h3>Programmazione — in arrivo</h3>
+            <p>Decidi <em>cosa</em> va in onda e <em>quando</em>: fasce orarie, giorni della settimana, intervalli di date.</p>
+            <ul><li>Calendario settimanale</li><li>Contenuti diversi per fascia oraria (dayparting)</li><li>Override per eventi e festività</li></ul>
+          </div>
+        </section>
+
+        <section data-view="impostazioni" class="hidden">
+          <div class="soon-box">
+            <h3>Il tuo account</h3>
+            <p id="settings-info">—</p>
+            <button class="ghost" id="logout2">esci dal portale</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script is:inline>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    const state = { screens: [], mode: 'mock', nome: '', piva: '' };
+
+    const api = {
+      me:     () => fetch('/api/login').then(r => r.json()),
+      login:  (identifier, password) => fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifier, password }) }).then(r => r.json()),
+      logout: () => fetch('/api/login', { method: 'DELETE' }),
+      screens:() => fetch('/api/screens').then(r => r.json()),
+      control:(id, action, value) => fetch('/api/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action, value }) }).then(r => r.json()),
+    };
+
+    const SEC_TITLE = { schermi: 'Schermi', contenuti: 'Contenuti', playlist: 'Playlist', programmazione: 'Programmazione', allarmi: 'Allarmi', impostazioni: 'Impostazioni' };
+
+    function showLogin() { $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); }
+    function showApp()   { $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); }
+
+    function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+    function rel(iso) {
+      const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+      if (m < 1) return 'ora'; if (m < 60) return m + ' min fa';
+      const h = Math.round(m / 60); if (h < 24) return h + ' h fa';
+      return Math.round(h / 24) + ' g fa';
+    }
+
+    function setSection(sec) {
+      $$('#nav a').forEach((a) => a.classList.toggle('active', a.dataset.sec === sec));
+      $$('[data-view]').forEach((v) => v.classList.toggle('hidden', v.dataset.view !== sec));
+      $('#sec-title').textContent = SEC_TITLE[sec] || '';
+      if (sec === 'allarmi') renderAllarmi();
+      if (sec === 'impostazioni') $('#settings-info').textContent = (state.nome || '—') + ' · P.IVA ' + (state.piva || '—') + ' · ' + state.screens.length + ' schermi associati';
+      if (location.hash !== '#' + sec) history.replaceState(null, '', '#' + sec);
+    }
+
+    function renderSchermi() {
+      const grid = $('#grid'); const s = state.screens;
+      if (!s.length) { grid.innerHTML = ''; $('#schermi-hint').innerHTML = '<div class="empty">Nessuno schermo ancora associato al tuo account.<br>Contatta VeroLED per l\'attivazione.</div>'; return; }
+      $('#schermi-hint').textContent = s.length + (s.length === 1 ? ' schermo' : ' schermi') + ' · aggiornato ' + new Date().toLocaleTimeString('it-IT');
+      grid.innerHTML = s.map((x) => {
+        const alarms = (x.alarms || []).map((a) => '<div class="alarm ' + esc(a.level) + '">' + esc(a.message) + ' · ' + rel(a.at) + '</div>').join('');
+        return `
+        <article class="card ${x.online ? '' : 'off'}" data-id="${esc(x.id)}" data-power="${x.power ? '1' : '0'}">
+          <div class="card-head">
+            <div><h3>${esc(x.name)}</h3><div class="loc">${esc(x.location || '')} · ${esc(x.model)}</div></div>
+            <span class="dot ${x.online ? 'online' : 'offline'}">${x.online ? 'online' : 'offline'}</span>
+          </div>
+          <div class="meta">
+            <span>Risoluzione <b>${esc(x.resolution)}</b></span>
+            <span>Temp <b>${x.temperature == null ? '—' : x.temperature + '°C'}</b></span>
+            <span>Visto <b>${rel(x.lastSeen)}</b></span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-row">
+              <label>Luminosità</label>
+              <input type="range" min="0" max="100" value="${x.brightness}" ${x.online ? '' : 'disabled'} data-act="brightness" />
+              <span class="bval">${x.brightness}%</span>
+            </div>
+            <div class="ctrl-row" style="margin-bottom:0">
+              <button class="mini" data-act="power" ${x.online ? '' : 'disabled'}>${x.power ? 'Spegni' : 'Accendi'}</button>
+              <button class="mini danger" data-act="reboot" ${x.online ? '' : 'disabled'}>Riavvia</button>
+            </div>
+          </div>
+          ${alarms ? '<div class="alarms">' + alarms + '</div>' : ''}
+        </article>`;
+      }).join('');
+      bindControls();
+    }
+
+    function renderAllarmi() {
+      const list = []; state.screens.forEach((s) => (s.alarms || []).forEach((a) => list.push({ a, s })));
+      list.sort((x, y) => (x.a.level === 'critical' ? -1 : 1) - (y.a.level === 'critical' ? -1 : 1));
+      $('#allarmi-hint').textContent = list.length ? list.length + ' allarme/i attivi' : '';
+      $('#allarmi-list').innerHTML = list.length
+        ? list.map(({ a, s }) => '<div class="alarm ' + esc(a.level) + '">' + esc(a.message) + '<span class="src">' + esc(s.name) + ' · ' + rel(a.at) + '</span></div>').join('')
+        : '<div class="empty">Nessun allarme. Tutto regolare. ✓</div>';
+    }
+
+    let t;
+    function bindControls() {
+      $$('.card').forEach((card) => {
+        const id = card.dataset.id;
+        const range = card.querySelector('input[type=range]');
+        if (range) {
+          range.addEventListener('input', (e) => { card.querySelector('.bval').textContent = e.target.value + '%'; });
+          range.addEventListener('change', (e) => { clearTimeout(t); const v = Number(e.target.value); t = setTimeout(() => api.control(id, 'brightness', v), 200); });
+        }
+        const power = card.querySelector('[data-act=power]');
+        if (power) power.addEventListener('click', async () => { power.disabled = true; await api.control(id, 'power', card.dataset.power !== '1'); loadDash(); });
+        const reboot = card.querySelector('[data-act=reboot]');
+        if (reboot) reboot.addEventListener('click', async () => { if (confirm('Riavviare ' + id + '?')) { reboot.disabled = true; await api.control(id, 'reboot'); setTimeout(loadDash, 600); } });
+      });
+    }
+
+    async function loadDash() {
+      const r = await api.screens();
+      if (!r.ok) { showLogin(); return; }
+      state.screens = r.screens || []; state.mode = r.mode;
+      $('#demo').classList.toggle('hidden', r.mode !== 'mock');
+      renderSchermi();
+      const cur = (location.hash || '#schermi').slice(1);
+      if (cur === 'allarmi') renderAllarmi();
+    }
+
+    $('#nav').addEventListener('click', (e) => {
+      const a = e.target.closest('a[data-sec]'); if (!a) return;
+      e.preventDefault(); setSection(a.dataset.sec);
+    });
+
+    $('#login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#login-btn'); const err = $('#login-err');
+      err.textContent = ''; btn.disabled = true; btn.textContent = 'accesso…';
+      const r = await api.login($('#identifier').value.trim(), $('#password').value);
+      btn.disabled = false; btn.textContent = 'accedi';
+      if (!r.ok) { err.textContent = r.error === 'credenziali_errate' ? 'P.IVA/email o password non corretti.' : 'Errore di accesso. Riprova.'; return; }
+      await enterApp(r.nome);
+    });
+
+    async function enterApp(nome) {
+      const me = await api.me();
+      state.nome = nome || me.nome || ''; state.piva = me.piva || '';
+      $('#who').textContent = state.nome;
+      showApp();
+      setSection((location.hash || '#schermi').slice(1) in SEC_TITLE ? location.hash.slice(1) : 'schermi');
+      await loadDash();
+    }
+
+    $('#logout').addEventListener('click', async () => { await api.logout(); location.hash = ''; showLogin(); });
+    $('#logout2').addEventListener('click', async () => { await api.logout(); location.hash = ''; showLogin(); });
+
+    (async function init() {
+      const me = await api.me().catch(() => ({ authed: false }));
+      if (me.authed) await enterApp(me.nome); else showLogin();
+    })();
+  </script>
+</body>
+</html>
