@@ -1,0 +1,328 @@
+---
+/**
+ * Compositore contenuti — /editor  (Fleet Monitor PRO)
+ * Editor visuale stile Canva/Yodeck: canvas col rapporto dello schermo,
+ * blocchi testo/immagine/video trascinabili e ridimensionabili, sfondo, durata,
+ * anteprima a schermo intero e pubblicazione sugli schermi del cliente.
+ * Pagina privata: se non autenticato torna al login (/). Bozza salvata in localStorage.
+ */
+export const prerender = true;
+---
+
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Compositore · Fleet Monitor PRO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root{--accent:#22a0c2;--accent-2:#89d155;--bg:#07090c;--bg-deep:#0d1014;--bg-side:#0a0d11;--text:#e8e8e8;--text-muted:#9aa0a6;--border:rgba(255,255,255,.08);--crit:#e5484d;}
+    *{box-sizing:border-box;}
+    html,body{height:100%;margin:0;}
+    body{background:var(--bg);color:var(--text);font-family:'Open Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden;}
+    .hidden{display:none!important;}
+    button{font-family:inherit;cursor:pointer;}
+
+    .ed{display:flex;flex-direction:column;height:100vh;}
+    .ed-top{display:flex;align-items:center;gap:1rem;padding:.7rem 1.1rem;border-bottom:1px solid var(--border);background:var(--bg-side);}
+    .back{color:var(--text-muted);text-decoration:none;font-size:.85rem;white-space:nowrap;}
+    .back:hover{color:var(--text);}
+    .brand{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.35rem;color:#fff;}
+    .top-r{margin-left:auto;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+    .top-r label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;}
+    select,input[type=text],input[type=number],textarea,input[type=url]{background:var(--bg-deep);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.85rem;font-family:inherit;padding:.45rem .55rem;}
+    select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);}
+    .btn{background:var(--accent);color:#04121a;border:0;border-radius:6px;padding:.55rem 1rem;font-weight:600;font-size:.85rem;}
+    .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+    .btn.ghost:hover{border-color:var(--accent);}
+    .btn:disabled{opacity:.5;cursor:default;}
+
+    .ed-body{display:grid;grid-template-columns:188px 1fr 244px;flex:1;min-height:0;}
+    .ed-tools,.ed-props{background:var(--bg-side);padding:1rem .9rem;overflow-y:auto;}
+    .ed-tools{border-right:1px solid var(--border);}
+    .ed-props{border-left:1px solid var(--border);}
+    .tools-h{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin:0 0 .7rem;}
+    .tool{display:flex;align-items:center;gap:.6rem;width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:7px;padding:.6rem .7rem;color:var(--text);font-size:.85rem;margin-bottom:.5rem;text-align:left;}
+    .tool:hover{border-color:var(--accent);color:var(--accent);}
+    .tool svg{width:16px;height:16px;flex:none;}
+
+    .ed-stage{display:flex;align-items:center;justify-content:center;padding:1.5rem;background:radial-gradient(900px 500px at 50% 0%,rgba(34,160,194,.05),transparent 60%);min-width:0;overflow:auto;}
+    .canvas-wrap{position:relative;box-shadow:0 10px 50px rgba(0,0,0,.6);}
+    .canvas{position:relative;background:#000;overflow:hidden;}
+    .el{position:absolute;cursor:move;border:1px solid transparent;user-select:none;}
+    .el.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+    .el img,.el video{width:100%;height:100%;display:block;}
+    .el .txt{width:100%;height:100%;display:flex;padding:2%;overflow:hidden;word-break:break-word;}
+    .handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:var(--accent);border-radius:2px;cursor:nwse-resize;}
+
+    .prop{margin-bottom:.85rem;}
+    .prop label{display:block;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.3rem;}
+    .prop input,.prop select,.prop textarea{width:100%;}
+    .prop textarea{min-height:54px;resize:vertical;}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+    .props-empty{color:var(--text-muted);font-size:.82rem;line-height:1.5;}
+    .del{color:var(--crit);background:transparent;border:1px solid rgba(229,72,77,.4);border-radius:6px;padding:.45rem;width:100%;font-size:.8rem;margin-top:.4rem;}
+    .seg{display:flex;gap:.3rem;}
+    .seg button{flex:1;background:var(--bg-deep);border:1px solid var(--border);color:var(--text-muted);border-radius:5px;padding:.4rem;font-size:.8rem;}
+    .seg button.on{border-color:var(--accent);color:var(--accent);}
+
+    /* overlay anteprima */
+    .overlay{position:fixed;inset:0;background:#000;z-index:100;display:flex;align-items:center;justify-content:center;}
+    .overlay .close{position:absolute;top:14px;right:18px;color:#fff;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:.5rem .8rem;z-index:2;}
+    /* modale pubblica */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;display:flex;align-items:center;justify-content:center;padding:1rem;}
+    .modal .box{background:var(--bg-deep);border:1px solid var(--border);border-radius:12px;padding:1.6rem;width:100%;max-width:420px;}
+    .modal h3{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:1.5rem;margin:0 0 .3rem;color:#fff;}
+    .modal p{color:var(--text-muted);font-size:.85rem;margin:0 0 1rem;}
+    .scr{display:flex;align-items:center;gap:.55rem;padding:.5rem;border:1px solid var(--border);border-radius:7px;margin-bottom:.45rem;font-size:.85rem;}
+    .scr input{width:16px;height:16px;accent-color:var(--accent);}
+    .modal-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem;}
+    .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--bg-deep);border:1px solid var(--accent);border-radius:10px;padding:.8rem 1.3rem;font-size:.9rem;z-index:200;opacity:0;transition:opacity .2s;}
+    .toast.show{opacity:1;}
+  </style>
+</head>
+<body>
+  <div class="ed">
+    <div class="ed-top">
+      <a class="back" href="/">← Dashboard</a>
+      <div class="brand">Compositore</div>
+      <div class="top-r">
+        <label>Formato</label>
+        <select id="ratio">
+          <option value="16:9">16:9 orizzontale</option>
+          <option value="9:16">9:16 verticale</option>
+          <option value="1:1">1:1 quadrato</option>
+          <option value="4:3">4:3</option>
+          <option value="21:9">21:9 ultrawide</option>
+        </select>
+        <label>Durata</label>
+        <input type="number" id="dur" min="1" max="3600" value="10" style="width:64px" /><span style="font-size:.78rem;color:var(--text-muted)">s</span>
+        <button class="btn ghost" id="btn-preview">Anteprima</button>
+        <button class="btn" id="btn-publish">Pubblica</button>
+      </div>
+    </div>
+
+    <div class="ed-body">
+      <aside class="ed-tools">
+        <p class="tools-h">Aggiungi</p>
+        <button class="tool" data-add="text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg> Testo</button>
+        <button class="tool" data-add="image"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> Immagine</button>
+        <button class="tool" data-add="video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="m22 8-6 4 6 4V8z"/></svg> Video</button>
+        <p class="tools-h" style="margin-top:1.2rem">Sfondo</p>
+        <input type="color" id="bg" value="#000000" style="width:100%;height:34px;background:none;border:1px solid var(--border);border-radius:6px;" />
+        <p class="tools-h" style="margin-top:1.2rem">Bozza</p>
+        <button class="tool" id="btn-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Salva bozza</button>
+        <button class="tool" id="btn-clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Svuota</button>
+      </aside>
+
+      <main class="ed-stage">
+        <div class="canvas-wrap" id="canvas-wrap"><div class="canvas" id="canvas"></div></div>
+      </main>
+
+      <aside class="ed-props">
+        <p class="tools-h">Proprietà</p>
+        <div id="props"><p class="props-empty">Seleziona un elemento sul canvas per modificarlo, oppure aggiungine uno dalla colonna a sinistra.</p></div>
+      </aside>
+    </div>
+  </div>
+
+  <input type="file" id="file-image" accept="image/*" class="hidden" />
+  <input type="file" id="file-video" accept="video/*" class="hidden" />
+
+  <div class="overlay hidden" id="overlay">
+    <button class="close" id="overlay-close">Chiudi ✕</button>
+    <div class="canvas-wrap" id="overlay-wrap"><div class="canvas" id="overlay-canvas"></div></div>
+  </div>
+
+  <div class="modal hidden" id="modal">
+    <div class="box">
+      <h3>Pubblica sugli schermi</h3>
+      <p>Scegli su quali schermi inviare questo contenuto.</p>
+      <div id="screen-list"><p class="props-empty">Caricamento schermi…</p></div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="modal-cancel">Annulla</button>
+        <button class="btn" id="modal-confirm">Pubblica</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script is:inline>
+    const $ = (s) => document.querySelector(s);
+    const uid = () => 'e' + Math.floor(performance.now() * 1000).toString(36) + Math.floor(performance.now() % 1).toString(36);
+    const LS_KEY = 'vl_editor_draft';
+    const RATIO = { '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1, '4:3': 4 / 3, '21:9': 21 / 9 };
+
+    let state = { ratio: '16:9', bg: '#000000', duration: 10, els: [] };
+    let selId = null;
+
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+    function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+    // ── dimensionamento canvas in base allo stage + rapporto ──
+    function fitCanvas() {
+      const stage = $('.ed-stage'); const wrap = $('#canvas-wrap');
+      const r = RATIO[state.ratio] || 16 / 9;
+      const availW = stage.clientWidth - 48, availH = stage.clientHeight - 48;
+      let w = availW, h = w / r;
+      if (h > availH) { h = availH; w = h * r; }
+      wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
+      $('#canvas').style.width = w + 'px'; $('#canvas').style.height = h + 'px';
+    }
+
+    function defaultsFor(type) {
+      if (type === 'text') return { text: 'Il tuo testo', size: 6, color: '#ffffff', weight: 600, align: 'center' };
+      if (type === 'image') return { src: '' };
+      if (type === 'video') return { src: '', loop: true, muted: true };
+      return {};
+    }
+    function addEl(type) {
+      const el = { id: uid(), type, x: 25, y: 30, w: 50, h: type === 'text' ? 20 : 40, ...defaultsFor(type) };
+      state.els.push(el); selId = el.id;
+      if (type === 'image') $('#file-image').click();
+      if (type === 'video') $('#file-video').click();
+      render();
+    }
+
+    function elInner(el) {
+      if (el.type === 'text') {
+        const st = `font-size:${el.size}cqw;color:${esc(el.color)};font-weight:${el.weight};justify-content:${el.align === 'left' ? 'flex-start' : el.align === 'right' ? 'flex-end' : 'center'};align-items:center;text-align:${esc(el.align)};line-height:1.15;`;
+        return `<div class="txt" style="${st}">${esc(el.text).replace(/\n/g,'<br>')}</div>`;
+      }
+      if (el.type === 'image') return el.src ? `<img src="${esc(el.src)}" style="object-fit:cover" alt="">` : `<div class="txt" style="justify-content:center;align-items:center;color:#888;font-size:2cqw">immagine — scegli un file/URL</div>`;
+      if (el.type === 'video') return el.src ? `<video src="${esc(el.src)}" ${el.muted ? 'muted' : ''} ${el.loop ? 'loop' : ''} autoplay playsinline style="object-fit:cover"></video>` : `<div class="txt" style="justify-content:center;align-items:center;color:#888;font-size:2cqw">video — scegli un file/URL</div>`;
+      return '';
+    }
+
+    function render() {
+      const c = $('#canvas'); c.style.background = state.bg; c.style.containerType = 'size';
+      c.innerHTML = state.els.map((el) => {
+        const sel = el.id === selId ? ' sel' : '';
+        return `<div class="el${sel}" data-id="${el.id}" style="left:${el.x}%;top:${el.y}%;width:${el.w}%;height:${el.h}%;">${elInner(el)}${el.id === selId ? '<span class="handle"></span>' : ''}</div>`;
+      }).join('');
+      bindCanvas();
+      renderProps();
+      $('#bg').value = state.bg; $('#ratio').value = state.ratio; $('#dur').value = state.duration;
+    }
+
+    function renderProps() {
+      const el = state.els.find((e) => e.id === selId);
+      const box = $('#props');
+      if (!el) { box.innerHTML = '<p class="props-empty">Seleziona un elemento sul canvas per modificarlo, oppure aggiungine uno dalla colonna a sinistra.</p>'; return; }
+      let h = '';
+      if (el.type === 'text') {
+        h += `<div class="prop"><label>Testo</label><textarea data-k="text">${esc(el.text)}</textarea></div>`;
+        h += `<div class="prop row2"><div><label>Dimensione</label><input type="number" data-k="size" value="${el.size}" min="1" max="40" step="0.5"></div><div><label>Colore</label><input type="color" data-k="color" value="${esc(el.color)}" style="height:34px;padding:2px"></div></div>`;
+        h += `<div class="prop"><label>Allineamento</label><div class="seg" id="seg-align">${['left','center','right'].map((a)=>`<button data-align="${a}" class="${el.align===a?'on':''}">${a==='left'?'Sx':a==='center'?'Centro':'Dx'}</button>`).join('')}</div></div>`;
+        h += `<div class="prop"><label>Grassetto</label><div class="seg" id="seg-weight">${[['400','Normale'],['600','Medio'],['800','Bold']].map(([w,l])=>`<button data-weight="${w}" class="${String(el.weight)===w?'on':''}">${l}</button>`).join('')}</div></div>`;
+      } else {
+        h += `<div class="prop"><label>URL ${el.type==='video'?'video':'immagine'}</label><input type="url" data-k="src" value="${esc(el.src)}" placeholder="https://…"></div>`;
+        h += `<div class="prop"><button class="tool" id="pick-file" style="margin:0">Scegli file dal dispositivo</button></div>`;
+        if (el.type === 'video') h += `<div class="prop seg"><button data-toggle="muted" class="${el.muted?'on':''}">Muto</button><button data-toggle="loop" class="${el.loop?'on':''}">Loop</button></div>`;
+      }
+      h += `<div class="prop row2" style="margin-top:.4rem"><div><label>X %</label><input type="number" data-k="x" value="${Math.round(el.x)}"></div><div><label>Y %</label><input type="number" data-k="y" value="${Math.round(el.y)}"></div></div>`;
+      h += `<div class="prop row2"><div><label>Largh %</label><input type="number" data-k="w" value="${Math.round(el.w)}"></div><div><label>Alt %</label><input type="number" data-k="h" value="${Math.round(el.h)}"></div></div>`;
+      h += `<button class="del" id="btn-del">Elimina elemento</button>`;
+      box.innerHTML = h;
+      bindProps(el);
+    }
+
+    function bindProps(el) {
+      $('#props').querySelectorAll('[data-k]').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          const k = inp.dataset.k; let v = inp.value;
+          if (['size','x','y','w','h'].includes(k)) v = parseFloat(v) || 0;
+          el[k] = v; render();
+          // mantieni il focus nel campo testo mentre si digita
+          if (k === 'text') { const t = $('#props textarea'); if (t) { t.focus(); t.value = el.text; } }
+        });
+      });
+      const segA = $('#seg-align'); if (segA) segA.querySelectorAll('[data-align]').forEach((b)=>b.addEventListener('click',()=>{el.align=b.dataset.align;render();}));
+      const segW = $('#seg-weight'); if (segW) segW.querySelectorAll('[data-weight]').forEach((b)=>b.addEventListener('click',()=>{el.weight=Number(b.dataset.weight);render();}));
+      $('#props').querySelectorAll('[data-toggle]').forEach((b)=>b.addEventListener('click',()=>{el[b.dataset.toggle]=!el[b.dataset.toggle];render();}));
+      const pick = $('#pick-file'); if (pick) pick.addEventListener('click',()=>{ $(el.type==='video'?'#file-video':'#file-image').click(); });
+      const del = $('#btn-del'); if (del) del.addEventListener('click',()=>{ state.els = state.els.filter((e)=>e.id!==selId); selId=null; render(); });
+    }
+
+    // ── drag & resize sul canvas ──
+    function bindCanvas() {
+      $('#canvas').querySelectorAll('.el').forEach((node) => {
+        const id = node.dataset.id; const el = state.els.find((e)=>e.id===id);
+        node.addEventListener('pointerdown', (ev) => {
+          if (ev.target.classList.contains('handle')) return;
+          selId = id; render();
+          const rect = $('#canvas').getBoundingClientRect();
+          const sx = ev.clientX, sy = ev.clientY, ox = el.x, oy = el.y;
+          const move = (e) => { el.x = Math.max(0, Math.min(100 - el.w, ox + (e.clientX - sx) / rect.width * 100)); el.y = Math.max(0, Math.min(100 - el.h, oy + (e.clientY - sy) / rect.height * 100)); render(); };
+          const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); };
+          document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+          ev.preventDefault();
+        });
+        const handle = node.querySelector('.handle');
+        if (handle) handle.addEventListener('pointerdown', (ev) => {
+          const rect = $('#canvas').getBoundingClientRect();
+          const sx = ev.clientX, sy = ev.clientY, ow = el.w, oh = el.h;
+          const move = (e) => { el.w = Math.max(5, Math.min(100 - el.x, ow + (e.clientX - sx) / rect.width * 100)); el.h = Math.max(5, Math.min(100 - el.y, oh + (e.clientY - sy) / rect.height * 100)); render(); };
+          const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); };
+          document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
+          ev.stopPropagation(); ev.preventDefault();
+        });
+      });
+      $('#canvas').addEventListener('pointerdown', (ev) => { if (ev.target.id === 'canvas') { selId = null; render(); } }, { once: true });
+    }
+
+    // ── toolbar ──
+    document.querySelectorAll('[data-add]').forEach((b)=>b.addEventListener('click',()=>addEl(b.dataset.add)));
+    $('#ratio').addEventListener('change',(e)=>{state.ratio=e.target.value;fitCanvas();render();});
+    $('#dur').addEventListener('input',(e)=>{state.duration=parseInt(e.target.value)||10;});
+    $('#bg').addEventListener('input',(e)=>{state.bg=e.target.value;render();});
+    function loadFile(inputId){ const inp=$(inputId); inp.addEventListener('change',()=>{ const f=inp.files[0]; if(!f)return; const el=state.els.find((e)=>e.id===selId); if(!el)return; el.src=URL.createObjectURL(f); el._localFile=true; render(); inp.value=''; }); }
+    loadFile('#file-image'); loadFile('#file-video');
+
+    // ── bozza ──
+    $('#btn-save').addEventListener('click',()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify({ ...state, els: state.els.map((e)=>({ ...e, src: e._localFile ? '' : e.src })) })); toast('Bozza salvata'); }catch{ toast('Errore salvataggio'); } });
+    $('#btn-clear').addEventListener('click',()=>{ if(confirm('Svuotare il canvas?')){ state.els=[]; selId=null; render(); } });
+    function loadDraft(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ const d=JSON.parse(raw); state={ratio:d.ratio||'16:9',bg:d.bg||'#000000',duration:d.duration||10,els:Array.isArray(d.els)?d.els:[]}; } }catch{} }
+
+    // ── anteprima ──
+    $('#btn-preview').addEventListener('click',()=>{
+      const r=RATIO[state.ratio]||16/9; let w=Math.min(window.innerWidth*0.92, (window.innerHeight*0.88)*r); let h=w/r;
+      const wrap=$('#overlay-wrap'); wrap.style.width=w+'px'; wrap.style.height=h+'px';
+      const oc=$('#overlay-canvas'); oc.style.width=w+'px'; oc.style.height=h+'px'; oc.style.background=state.bg; oc.style.containerType='size';
+      const saved=selId; selId=null; oc.innerHTML=state.els.map((el)=>`<div class="el" style="left:${el.x}%;top:${el.y}%;width:${el.w}%;height:${el.h}%;">${elInner(el)}</div>`).join(''); selId=saved;
+      $('#overlay').classList.remove('hidden');
+    });
+    $('#overlay-close').addEventListener('click',()=>{ $('#overlay-canvas').innerHTML=''; $('#overlay').classList.add('hidden'); });
+
+    // ── pubblica ──
+    let screens=[];
+    $('#btn-publish').addEventListener('click', async ()=>{
+      if(!state.els.length){ toast('Aggiungi almeno un elemento'); return; }
+      $('#modal').classList.remove('hidden');
+      try{ const r=await fetch('/api/screens').then((x)=>x.json()); screens=r.ok?(r.screens||[]):[]; }catch{ screens=[]; }
+      $('#screen-list').innerHTML = screens.length ? screens.map((s)=>`<label class="scr"><input type="checkbox" value="${esc(s.id)}" ${s.online?'':'disabled'}> <span>${esc(s.name)}</span> <span style="margin-left:auto;color:${s.online?'var(--accent-2)':'var(--crit)'};font-size:.72rem">${s.online?'online':'offline'}</span></label>`).join('') : '<p class="props-empty">Nessuno schermo disponibile.</p>';
+    });
+    $('#modal-cancel').addEventListener('click',()=>$('#modal').classList.add('hidden'));
+    $('#modal-confirm').addEventListener('click', async ()=>{
+      const ids=Array.from($('#screen-list').querySelectorAll('input:checked')).map((c)=>c.value);
+      if(!ids.length){ toast('Seleziona almeno uno schermo'); return; }
+      const btn=$('#modal-confirm'); btn.disabled=true;
+      const payload={ screens:ids, duration:state.duration, ratio:state.ratio, bg:state.bg, elements:state.els.map((e)=>({ type:e.type, x:e.x, y:e.y, w:e.w, h:e.h, text:e.text, size:e.size, color:e.color, weight:e.weight, align:e.align, src:e._localFile?null:e.src, loop:e.loop, muted:e.muted })) };
+      try{ const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then((x)=>x.json()); btn.disabled=false; $('#modal').classList.add('hidden'); toast(r.ok?('Pubblicato su '+ids.length+' schermo/i'+(r.mode==='mock'?' (demo)':'')):'Errore: '+(r.error||'')); }
+      catch{ btn.disabled=false; toast('Errore di rete'); }
+    });
+
+    // ── init: richiede login ──
+    (async function init(){
+      try{ const me=await fetch('/api/login').then((r)=>r.json()); if(!me.authed){ location.href='/'; return; } }catch{ location.href='/'; return; }
+      loadDraft(); fitCanvas(); render();
+      window.addEventListener('resize', ()=>{ fitCanvas(); render(); });
+    })();
+  </script>
+</body>
+</html>
