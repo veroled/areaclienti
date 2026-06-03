@@ -287,7 +287,7 @@ export const prerender = true;
       toast('Caricamento file…');
       try{
         const r=await fetch('/api/upload',{method:'POST',headers:{'content-type':f.type||'application/octet-stream','x-filename':encodeURIComponent(f.name)},body:f}).then((x)=>x.json());
-        if(r&&r.ok){ el.src=r.url; el._localFile=false; render(); toast('File caricato'); }
+        if(r&&r.ok){ el.src=r.url; el._localFile=false; el.md5=r.md5; el.bytes=r.size; render(); toast('File caricato'); }
         else if(r&&r.error==='storage_media_non_configurato'){ toast('Anteprima locale (storage R2 non ancora attivo)'); }
         else { toast('Upload non riuscito'+(r&&r.error?': '+r.error:'')); }
       }catch{ toast("Errore di rete (resta l'anteprima locale)"); }
@@ -323,7 +323,7 @@ export const prerender = true;
       const ids=Array.from($('#screen-list').querySelectorAll('input:checked')).map((c)=>c.value);
       if(!ids.length){ toast('Seleziona almeno uno schermo'); return; }
       const btn=$('#modal-confirm'); btn.disabled=true;
-      const payload={ screens:ids, duration:state.duration, ratio:state.ratio, bg:state.bg, elements:state.els.map((e)=>({ type:e.type, x:e.x, y:e.y, w:e.w, h:e.h, text:e.text, size:e.size, color:e.color, weight:e.weight, align:e.align, src:e._localFile?null:e.src, loop:e.loop, muted:e.muted })) };
+      const payload={ screens:ids, duration:state.duration, ratio:state.ratio, bg:state.bg, elements:state.els.map((e)=>({ type:e.type, x:e.x, y:e.y, w:e.w, h:e.h, text:e.text, size:e.size, color:e.color, weight:e.weight, align:e.align, src:e._localFile?null:e.src, md5:e.md5, bytes:e.bytes, loop:e.loop, muted:e.muted })) };
       try{ const r=await fetch('/api/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then((x)=>x.json()); btn.disabled=false; $('#modal').classList.add('hidden'); toast(r.ok?('Pubblicato su '+ids.length+' schermo/i'+(r.mode==='mock'?' (demo)':'')):'Errore: '+(r.error||'')); }
       catch{ btn.disabled=false; toast('Errore di rete'); }
     });

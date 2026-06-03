@@ -222,6 +222,11 @@ export async function requestRunningStatus(env: VnnoxEnv, playerIds: string[], n
   });
 }
 
+/** Pubblica un program (solution) sui player. Ritorna { success, fail } da VNNOX. */
+export async function publishProgram(env: VnnoxEnv, program: unknown): Promise<{ success?: string[]; fail?: string[] }> {
+  return vnnoxRequest<{ success?: string[]; fail?: string[] }>(env, EP.publish, { method: 'POST', body: program });
+}
+
 export async function getScreen(env: VnnoxEnv, id: string, allowedIds?: string[]): Promise<VnnoxScreen | null> {
   const all = await getScreens(env, allowedIds);
   return all.find((s) => s.id === id) || null;
