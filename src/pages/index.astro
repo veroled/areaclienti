@@ -337,7 +337,8 @@ export const prerender = true;
       state.nome = nome || me.nome || ''; state.piva = me.piva || '';
       $('#who').textContent = state.nome;
       showApp();
-      setSection((location.hash || '#schermi').slice(1) in SEC_TITLE ? location.hash.slice(1) : 'schermi');
+      const initialSec = (location.hash || '').slice(1);
+      setSection(initialSec in SEC_TITLE ? initialSec : 'schermi');
       await loadDash();
     }
 
