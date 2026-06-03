@@ -281,7 +281,18 @@ export const prerender = true;
     $('#ratio').addEventListener('change',(e)=>{state.ratio=e.target.value;fitCanvas();render();});
     $('#dur').addEventListener('input',(e)=>{state.duration=parseInt(e.target.value)||10;});
     $('#bg').addEventListener('input',(e)=>{state.bg=e.target.value;render();});
-    function loadFile(inputId){ const inp=$(inputId); inp.addEventListener('change',()=>{ const f=inp.files[0]; if(!f)return; const el=state.els.find((e)=>e.id===selId); if(!el)return; el.src=URL.createObjectURL(f); el._localFile=true; render(); inp.value=''; }); }
+    function loadFile(inputId){ const inp=$(inputId); inp.addEventListener('change', async ()=>{
+      const f=inp.files[0]; if(!f)return; const el=state.els.find((e)=>e.id===selId); if(!el)return;
+      el.src=URL.createObjectURL(f); el._localFile=true; render(); // anteprima immediata
+      toast('Caricamento file…');
+      try{
+        const r=await fetch('/api/upload',{method:'POST',headers:{'content-type':f.type||'application/octet-stream','x-filename':encodeURIComponent(f.name)},body:f}).then((x)=>x.json());
+        if(r&&r.ok){ el.src=r.url; el._localFile=false; render(); toast('File caricato'); }
+        else if(r&&r.error==='storage_media_non_configurato'){ toast('Anteprima locale (storage R2 non ancora attivo)'); }
+        else { toast('Upload non riuscito'+(r&&r.error?': '+r.error:'')); }
+      }catch{ toast("Errore di rete (resta l'anteprima locale)"); }
+      inp.value='';
+    }); }
     loadFile('#file-image'); loadFile('#file-video');
 
     // ── bozza ──

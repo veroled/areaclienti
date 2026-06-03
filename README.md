@@ -16,6 +16,7 @@ Indipendente dal sito veroledsrl.com: i suoi deploy non lo toccano.
    - Build command: `npm run build`
    - Output directory: `dist`
 3. **KV**: crea/collega un namespace come binding **`VEROLED_KV`** (Settings → Functions → KV namespace bindings), per Production e Preview.
+   - **R2** (per l'upload dei contenuti nel Compositore): crea un bucket R2 e collegalo come binding **`MEDIA`** (Settings → Functions → R2 bucket bindings). I file caricati vengono serviti pubblicamente da `/api/media/{key}`. Senza questo binding il Compositore mostra solo l'anteprima locale.
 4. **Environment variables** (Production e Preview):
    - `VNNOX_APPKEY`, `VNNOX_APPSECRET` — dalla NovaCloud Open Platform
    - `VNNOX_MODE` — `mock` per il demo, `live` per l'API reale
