@@ -399,70 +399,132 @@ export const prerender = true;
     document.querySelectorAll('[data-go]').forEach(a => a.onclick = () => show(a.dataset.go));
     document.getElementById('burger').onclick = () => side.classList.toggle('open');
 
-    const init = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const init = n => (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const eur = n => '€ ' + Math.round(Number(n)||0).toLocaleString('it-IT');
+    const stars = p => '★'.repeat(p) + '<span style="color:var(--border)">'+'★'.repeat(3-(p||0))+'</span>';
 
-    // charts
-    const c1 = [{m:'Gen',v:38},{m:'Feb',v:52},{m:'Mar',v:44},{m:'Apr',v:61},{m:'Mag',v:73},{m:'Giu',v:58}];
-    const m1 = Math.max(...c1.map(d=>d.v));
-    document.getElementById('chart').innerHTML = c1.map(d=>`<div class="bar"><i style="height:${d.v/m1*100}%"></i><span>${d.m}</span></div>`).join('');
-    const c2 = [{m:'Lead',v:24},{m:'Qualif.',v:16},{m:'Proposta',v:9},{m:'Negoz.',v:5},{m:'Vinta',v:6}];
-    const m2 = Math.max(...c2.map(d=>d.v));
-    document.getElementById('chart2').innerHTML = c2.map(d=>`<div class="bar"><i style="height:${d.v/m2*100}%"></i><span>${d.m}</span></div>`).join('');
+    // ── Dati demo (fallback se /api/crm/* non è disponibile: binding mancante, astro dev, o non autenticato) ──
+    const DEMO = {
+      contatti: [
+        {nome:'Mario Rossi',ruolo:'Direttore',azienda:'Sport Center Bari',stato:'lead',priorita:3},
+        {nome:'Lucia Bianchi',ruolo:'Titolare',azienda:'Hotel Riviera',stato:'lead',priorita:2},
+        {nome:'Giuseppe Verdi',ruolo:'Resp. acquisti',azienda:'Comune di Lecce',stato:'active',priorita:3},
+        {nome:'Anna Esposito',ruolo:'Marketing',azienda:'Centro Le Vele',stato:'active',priorita:2},
+        {nome:'Marco Greco',ruolo:'Farmacista',azienda:'Farmacia San Marco',stato:'lead',priorita:1},
+        {nome:'Sara Conti',ruolo:'Event manager',azienda:'Pro Loco Otranto',stato:'active',priorita:3},
+        {nome:'Davide Russo',ruolo:'Titolare',azienda:'Studio Dentistico',stato:'cold',priorita:1},
+      ],
+      aziende: [
+        {nome:'Sport Center Bari',tipo:'cliente'},{nome:'Comune di Lecce',tipo:'pa'},
+        {nome:'Hotel Riviera',tipo:'prospect'},{nome:'Centro Le Vele',tipo:'cliente'},
+        {nome:'Pro Loco Otranto',tipo:'cliente'},{nome:'Farmacia San Marco',tipo:'prospect'},
+      ],
+      trattative: [
+        {titolo:'Totem ingresso',azienda:'Hotel Riviera',fase:'lead',valore:6200,owner:'AB'},
+        {titolo:'Insegna LED',azienda:'Farmacia San Marco',fase:'lead',valore:3400,owner:'GV'},
+        {titolo:'Schermo vetrina',azienda:'Centro Le Vele',fase:'qualificato',valore:9800,owner:'AB'},
+        {titolo:'LED indoor P2.5',azienda:'Studio Dentistico',fase:'qualificato',valore:4100,owner:'GV'},
+        {titolo:'LED wall esterno P4',azienda:'Sport Center Bari',fase:'proposta',valore:18500,owner:'AB'},
+        {titolo:'Maxischermo eventi',azienda:'Pro Loco Otranto',fase:'negoziazione',valore:22000,owner:'GV'},
+        {titolo:'LED piazza',azienda:'Comune di Lecce',fase:'vinta',valore:14000,owner:'AB'},
+      ],
+      preventivi: [
+        {numero:'2026-014',azienda:'Sport Center Bari',totale:22570,stato:'sent'},
+        {numero:'2026-013',azienda:'Centro Le Vele',totale:11956,stato:'won'},
+        {numero:'2026-012',azienda:'Hotel Riviera',totale:7564,stato:'draft'},
+        {numero:'2026-011',azienda:'Pro Loco Otranto',totale:26840,stato:'sent'},
+      ],
+      attivita: [
+        {titolo:'Richiamare Sport Center Bari',scadenza:'2026-06-04 14:30'},
+        {titolo:'Inviare preventivo Hotel Riviera',scadenza:'2026-06-04 16:00'},
+        {titolo:'Demo prodotto Centro Le Vele',scadenza:'2026-06-11 10:00'},
+        {titolo:'Firma contratto Farmacia San Marco',scadenza:'2026-06-12 15:00'},
+      ],
+    };
 
-    // kanban
-    const stages = [
-      { name:'Lead', dot:'#d98a16', deals:[{t:'Totem ingresso',co:'Hotel Riviera',v:'€ 6.200',who:'AB',tag:'nuovo'},{t:'Insegna LED',co:'Farmacia San Marco',v:'€ 3.400',who:'GV',tag:'web'}]},
-      { name:'Qualificato', dot:'#1a8aab', deals:[{t:'Schermo vetrina',co:'Centro Le Vele',v:'€ 9.800',who:'AB',tag:''},{t:'LED indoor P2.5',co:'Studio Dentistico',v:'€ 4.100',who:'GV',tag:''}]},
-      { name:'Proposta', dot:'#1a8aab', deals:[{t:'LED wall esterno',co:'Sport Center Bari',v:'€ 18.500',who:'AB',tag:'caldo'}]},
-      { name:'Negoziazione', dot:'#5aa829', deals:[{t:'Maxischermo eventi',co:'Pro Loco Otranto',v:'€ 22.000',who:'GV',tag:''}]},
-      { name:'Vinta', dot:'#5aa829', deals:[{t:'LED piazza',co:'Comune di Lecce',v:'€ 14.000',who:'AB',tag:'firmato'}]},
+    // ── API layer: x-admin-secret condiviso col pannello /admin (sessionStorage vl_admin_secret) ──
+    const SECRET = sessionStorage.getItem('vl_admin_secret') || '';
+    async function crm(entity){
+      const r = await fetch('/api/crm/' + entity, { headers: SECRET ? { 'x-admin-secret': SECRET } : {} });
+      if(!r.ok) throw new Error(String(r.status));
+      const j = await r.json();
+      return j.items || j;
+    }
+
+    const TIPO = { cliente:'Cliente', prospect:'Prospect', pa:'PA' };
+    const STATO = { lead:'Lead', active:'Cliente', cold:'Freddo' };
+    const QSTATO = { draft:'Bozza', sent:'Inviato', won:'Accettato', lost:'Perso' };
+    const FASI = [
+      {key:'lead', name:'Lead', dot:'#d98a16'},
+      {key:'qualificato', name:'Qualificato', dot:'#1a8aab'},
+      {key:'proposta', name:'Proposta', dot:'#1a8aab'},
+      {key:'negoziazione', name:'Negoziazione', dot:'#5aa829'},
+      {key:'vinta', name:'Vinta', dot:'#5aa829'},
     ];
-    document.getElementById('board').innerHTML = stages.map(s=>`
-      <div class="col"><div class="col-head"><h4><span class="dot-s" style="background:${s.dot}"></span>${s.name}</h4><span style="font-size:.72rem;color:var(--text-muted)">${s.deals.length}</span></div>
-      ${s.deals.map(d=>`<div class="deal" data-name="${d.co}" data-role="Trattativa" data-co="${d.t}"><h5>${d.t}</h5><div class="co">${d.co}</div><div class="row"><span class="val">${d.v}</span><span style="display:flex;align-items:center;gap:.4rem">${d.tag?`<span class="tag">${d.tag}</span>`:''}<span class="pill-avatar">${d.who}</span></span></div></div>`).join('')}</div>`).join('');
 
-    // contatti
-    const contacts = [
-      {n:'Mario Rossi',r:'Direttore',co:'Sport Center Bari',st:'lead',stl:'Lead',v:'€ 18.500',p:3,d:'2 ore fa'},
-      {n:'Lucia Bianchi',r:'Titolare',co:'Hotel Riviera',st:'lead',stl:'Lead',v:'€ 6.200',p:2,d:'Ieri'},
-      {n:'Giuseppe Verdi',r:'Resp. acquisti',co:'Comune di Lecce',st:'active',stl:'Cliente',v:'€ 14.000',p:3,d:'Oggi'},
-      {n:'Anna Esposito',r:'Marketing',co:'Centro Le Vele',st:'active',stl:'Cliente',v:'€ 9.800',p:2,d:'3 giorni fa'},
-      {n:'Marco Greco',r:'Farmacista',co:'Farmacia San Marco',st:'lead',stl:'Lead',v:'€ 3.400',p:1,d:'Ieri'},
-      {n:'Sara Conti',r:'Event manager',co:'Pro Loco Otranto',st:'active',stl:'Cliente',v:'€ 22.000',p:3,d:'5 giorni fa'},
-      {n:'Davide Russo',r:'Titolare',co:'Studio Dentistico',st:'cold',stl:'Freddo',v:'€ 4.100',p:1,d:'2 sett. fa'},
-    ];
-    const stars = p => '★'.repeat(p) + '<span style="color:var(--border)">'+'★'.repeat(3-p)+'</span>';
-    document.getElementById('tbody').innerHTML = contacts.map(c=>`
-      <tr data-name="${c.n}" data-role="${c.r}" data-co="${c.co}">
-        <td><div class="cell-name"><span class="pill-avatar" style="width:30px;height:30px;font-size:.7rem">${init(c.n)}</span><span><b>${c.n}</b><small>${c.r}</small></span></div></td>
-        <td>${c.co}</td><td><span class="badge ${c.st}">${c.stl}</span></td>
-        <td style="color:var(--accent);font-weight:600">${c.v}</td><td class="stars">${stars(c.p)}</td><td style="color:var(--text-muted)">${c.d}</td></tr>`).join('');
+    // ── Render (data-driven) ──
+    function renderKanban(trattative){
+      document.getElementById('board').innerHTML = FASI.map(f=>{
+        const ds = trattative.filter(t=>t.fase===f.key);
+        return `<div class="col"><div class="col-head"><h4><span class="dot-s" style="background:${f.dot}"></span>${f.name}</h4><span style="font-size:.72rem;color:var(--text-muted)">${ds.length}</span></div>
+        ${ds.map(d=>`<div class="deal" data-name="${d.azienda||''}" data-role="Trattativa" data-co="${d.titolo}"><h5>${d.titolo}</h5><div class="co">${d.azienda||''}</div><div class="row"><span class="val">${eur(d.valore)}</span><span style="display:flex;align-items:center;gap:.4rem">${d.probabilita?`<span class="tag">${d.probabilita}%</span>`:''}<span class="pill-avatar">${d.owner||'—'}</span></span></div></div>`).join('')}</div>`;
+      }).join('');
+    }
+    function renderContatti(contatti, valByAz){
+      document.getElementById('tbody').innerHTML = contatti.map(c=>`
+        <tr data-name="${c.nome}" data-role="${c.ruolo||''}" data-co="${c.azienda||''}">
+          <td><div class="cell-name"><span class="pill-avatar" style="width:30px;height:30px;font-size:.7rem">${init(c.nome)}</span><span><b>${c.nome}</b><small>${c.ruolo||''}</small></span></div></td>
+          <td>${c.azienda||'—'}</td><td><span class="badge ${c.stato}">${STATO[c.stato]||c.stato}</span></td>
+          <td style="color:var(--accent);font-weight:600">${eur((valByAz&&valByAz[c.azienda])||0)}</td><td class="stars">${stars(c.priorita)}</td><td style="color:var(--text-muted)">${(c.updated_at||'').slice(0,10)||'—'}</td></tr>`).join('');
+    }
+    function renderAziende(aziende, statsByAz){
+      document.getElementById('companies').innerHTML = aziende.map(a=>{
+        const s = (statsByAz&&statsByAz[a.nome]) || { n:0, v:0 };
+        return `<div class="ccard" data-name="${a.nome}" data-role="${TIPO[a.tipo]||a.tipo}" data-co="${s.n} contatti">
+          <div class="top"><div class="logo">${init(a.nome)}</div><div><h4>${a.nome}</h4><div class="sub">${TIPO[a.tipo]||a.tipo}</div></div></div>
+          <div class="stat"><div><b>${s.n}</b>contatti</div><div><b>${eur(s.v)}</b>valore</div></div></div>`;
+      }).join('');
+    }
+    function renderPreventivi(preventivi){
+      document.getElementById('quotes').innerHTML = preventivi.map(q=>`
+        <tr><td><div class="cell-name"><span><b>#${q.numero||q.id}</b><small>${q.azienda||''}</small></span></div></td>
+        <td style="font-weight:600">${eur(q.totale)}</td><td><span class="badge ${q.stato}">${QSTATO[q.stato]||q.stato}</span></td></tr>`).join('');
+    }
+    function renderCharts(trattative, preventivi){
+      // fatturato per mese (preventivi accettati)
+      const mesiN = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+      const byMese = {};
+      preventivi.filter(p=>p.stato==='won').forEach(p=>{ const m=(p.data||'').slice(0,7); byMese[m]=(byMese[m]||0)+Number(p.totale||0); });
+      let serie = Object.keys(byMese).sort().slice(-6).map(k=>({m:mesiN[+k.slice(5,7)-1]||k, v:byMese[k]}));
+      if(!serie.length) serie = [{m:'Gen',v:38},{m:'Feb',v:52},{m:'Mar',v:44},{m:'Apr',v:61},{m:'Mag',v:73},{m:'Giu',v:58}];
+      const mx = Math.max(...serie.map(d=>d.v))||1;
+      document.getElementById('chart').innerHTML = serie.map(d=>`<div class="bar"><i style="height:${d.v/mx*100}%"></i><span>${d.m}</span></div>`).join('');
+      // trattative per fase
+      const perFase = FASI.map(f=>({m:f.name.slice(0,7), v:trattative.filter(t=>t.fase===f.key).length}));
+      const mx2 = Math.max(...perFase.map(d=>d.v))||1;
+      document.getElementById('chart2').innerHTML = perFase.map(d=>`<div class="bar"><i style="height:${d.v/mx2*100}%"></i><span>${d.m}</span></div>`).join('');
+    }
 
-    // aziende
-    const companies = [
-      {n:'Sport Center Bari',t:'Cliente',c:'4 contatti',d:'2 trattative',v:'€ 18.500'},
-      {n:'Comune di Lecce',t:'PA',c:'3 contatti',d:'1 schermo',v:'€ 14.000'},
-      {n:'Hotel Riviera',t:'Prospect',c:'2 contatti',d:'2 schermi',v:'€ 6.200'},
-      {n:'Centro Le Vele',t:'Cliente',c:'5 contatti',d:'3 schermi',v:'€ 9.800'},
-      {n:'Pro Loco Otranto',t:'Cliente',c:'2 contatti',d:'1 trattativa',v:'€ 22.000'},
-      {n:'Farmacia San Marco',t:'Prospect',c:'1 contatto',d:'lead',v:'€ 3.400'},
-    ];
-    document.getElementById('companies').innerHTML = companies.map(c=>`
-      <div class="ccard" data-name="${c.n}" data-role="${c.t}" data-co="${c.c}">
-        <div class="top"><div class="logo">${init(c.n)}</div><div><h4>${c.n}</h4><div class="sub">${c.t}</div></div></div>
-        <div class="stat"><div><b>${c.c.split(' ')[0]}</b>contatti</div><div><b>${c.v}</b>valore</div></div>
-      </div>`).join('');
+    // ── Carica i dati reali; in caso di errore usa i DEMO ──
+    (async function loadData(){
+      let A=DEMO.aziende, C=DEMO.contatti, T=DEMO.trattative, P=DEMO.preventivi, live=false;
+      try {
+        const [a,c,t,p] = await Promise.all([crm('aziende'),crm('contatti'),crm('trattative'),crm('preventivi')]);
+        A=a; C=c; T=t; P=p; live=true;
+      } catch(e){ /* fallback demo */ }
 
-    // preventivi
-    const quotes = [
-      {n:'2026-014',co:'Sport Center Bari',v:'€ 22.570',st:'sent',stl:'Inviato'},
-      {n:'2026-013',co:'Centro Le Vele',v:'€ 11.956',st:'won',stl:'Accettato'},
-      {n:'2026-012',co:'Hotel Riviera',v:'€ 7.564',st:'draft',stl:'Bozza'},
-      {n:'2026-011',co:'Pro Loco Otranto',v:'€ 26.840',st:'sent',stl:'Inviato'},
-    ];
-    document.getElementById('quotes').innerHTML = quotes.map(q=>`
-      <tr><td><div class="cell-name"><span><b>#${q.n}</b><small>${q.co}</small></span></div></td>
-      <td style="font-weight:600">${q.v}</td><td><span class="badge ${q.st}">${q.stl}</span></td></tr>`).join('');
+      // aggregati per azienda (valore pipeline + n. contatti)
+      const valByAz = {}, statsByAz = {};
+      A.forEach(a=>{ statsByAz[a.nome] = { n:0, v:0 }; });
+      C.forEach(c=>{ if(statsByAz[c.azienda]) statsByAz[c.azienda].n++; });
+      T.forEach(t=>{ valByAz[t.azienda]=(valByAz[t.azienda]||0)+Number(t.valore||0); if(statsByAz[t.azienda]) statsByAz[t.azienda].v+=Number(t.valore||0); });
+
+      renderKanban(T); renderContatti(C, valByAz); renderAziende(A, statsByAz);
+      renderPreventivi(P); renderCharts(T, P);
+
+      if(!live){ document.getElementById('sec-title').insertAdjacentHTML('beforeend',
+        ' <span style="font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--warn);padding:3px 8px;border-radius:4px;vertical-align:middle">dati demo</span>'); }
+    })();
 
     // schermi LED (mock di /api/screens)
     const screens = [

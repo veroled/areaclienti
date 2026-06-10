@@ -7,8 +7,21 @@ Indipendente dal sito veroledsrl.com: i suoi deploy non lo toccano.
 ## Struttura
 - `src/pages/index.astro` — portale cliente (login + dashboard schermi). Sta alla **root** `/`.
 - `src/pages/admin.astro` — pannello admin per creare i clienti e assegnare gli schermi (`/admin`).
-- `functions/api/*` — login, screens, control, vnnox-callback; `functions/api/admin/clienti` (provisioning).
+- `src/pages/crm.astro` — **VeroCRM**: gestione clienti/trattative/preventivi (`/crm`).
+- `functions/api/*` — login, screens, control, vnnox-callback; `functions/api/admin/clienti` (provisioning); `functions/api/crm/*` (CRM su D1).
 - `functions/_lib/*` — `vnnox.ts` (client OpenAPI), `portaleauth.ts` (auth+sessioni), `crypto.ts`.
+- `migrations/*.sql` — schema e seed del database CRM (Cloudflare D1).
+
+## CRM (VeroCRM · `/crm`)
+CRM clienti agganciato al portale, stile coerente col Fleet Monitor.
+- **Dati**: Cloudflare **D1** (`verocrm-db`). API REST in `functions/api/crm/[[route]].ts`
+  (`/api/crm/{aziende|contatti|trattative|preventivi|attivita}` + `/api/crm/dashboard`),
+  protette da `x-admin-secret` (stesso segreto di `/admin`).
+- **Binding**: Cloudflare Pages → Settings → Functions → **D1 database bindings** →
+  nome **`VEROCRM_DB`** → database `verocrm-db`. Senza binding le API rispondono 503 e
+  la pagina `/crm` mostra i **dati demo** (badge "dati demo").
+- **Schema**: `migrations/0001_init.sql` · **Seed demo**: `migrations/0002_seed.sql`
+  (`wrangler d1 execute verocrm-db --file migrations/0001_init.sql`).
 
 ## Setup Cloudflare Pages (una tantum)
 1. Crea un **repo GitHub** e fai push di questa cartella.
