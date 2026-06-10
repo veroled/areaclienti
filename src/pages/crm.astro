@@ -1,0 +1,508 @@
+---
+/**
+ * VeroCRM — CRM clienti VeroLED (areaclienti.veroledsrl.com).
+ * App shell stile Light: sidebar (Dashboard · Pipeline · Contatti · Aziende ·
+ * Preventivi · Schermi LED · Attività · Report · Impostazioni) + area di lavoro.
+ * Pagina privata (noindex). I dati sono mock lato client: vanno sostituiti con
+ * chiamate a /api/crm/* (Pages Functions + D1). La vista "Schermi LED" si
+ * aggancia a /api/screens del portale Fleet Monitor PRO.
+ */
+export const prerender = true;
+---
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>VeroCRM · VeroLED</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style is:global>
+    :root {
+      --accent: #1a8aab; --accent-2: #5aa829;
+      --bg: #f4f6f8; --surface: #ffffff; --surface-2: #fafbfc;
+      --text: #1c2430; --text-muted: #6b7682;
+      --border: #e6eaee; --border-2: #eef1f4;
+      --crit: #d83b40; --warn: #d98a16; --ok: #5aa829;
+      --shadow: 0 1px 2px rgba(20,30,45,.04), 0 4px 14px rgba(20,30,45,.05);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Open Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .hidden { display: none !important; }
+    h3,h4,h5 { margin: 0; }
+
+    .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+    .side { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.3rem 0; position: sticky; top: 0; height: 100vh; }
+    .brand { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.55rem; line-height: 1.1; padding: 0 1.4rem 1.3rem; }
+    .brand em { color: var(--accent); }
+    .brand small { font-family: 'Open Sans'; font-style: normal; font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); display: block; margin-top: 3px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: .3rem .7rem; flex: 1; overflow-y: auto; }
+    .nav .grp { font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); padding: .9rem .8rem .35rem; }
+    .nav a { display: flex; align-items: center; gap: .7rem; padding: .58rem .8rem; border-radius: 8px; color: var(--text-muted); text-decoration: none; font-size: .88rem; cursor: pointer; }
+    .nav a:hover { background: var(--surface-2); color: var(--text); }
+    .nav a.active { background: rgba(26,138,171,.1); color: var(--accent); font-weight: 600; }
+    .nav a svg { width: 17px; height: 17px; flex: 0 0 17px; }
+    .nav .count { margin-left: auto; font-size: .62rem; color: var(--text-muted); background: var(--border-2); padding: 1px 7px; border-radius: 10px; }
+    .side-foot { padding: .9rem 1.2rem 0; border-top: 1px solid var(--border); margin-top: .4rem; display: flex; align-items: center; gap: .7rem; }
+    .avatar { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: .82rem; }
+    .who { font-size: .82rem; line-height: 1.2; } .who small { display: block; color: var(--text-muted); font-size: .68rem; }
+
+    .main { min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.8rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(244,246,248,.85); backdrop-filter: blur(8px); z-index: 5; }
+    .topbar h2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 1.7rem; margin: 0; }
+    .search { flex: 1; max-width: 360px; position: relative; }
+    .search input { width: 100%; padding: .55rem .8rem .55rem 2.1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: .85rem; font-family: inherit; }
+    .search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,138,171,.12); }
+    .search svg { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--text-muted); }
+    .btn { padding: .55rem 1rem; background: var(--accent); color: #fff; border: 0; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: .82rem; font-family: inherit; display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; box-shadow: 0 2px 6px rgba(26,138,171,.25); }
+    .btn:hover { filter: brightness(1.06); }
+    .btn svg { width: 15px; height: 15px; }
+    .ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: .5rem .8rem; border-radius: 8px; cursor: pointer; font-size: .8rem; font-family: inherit; display: inline-flex; align-items: center; gap: .4rem; }
+    .ghost:hover { color: var(--text); border-color: var(--accent); }
+    .ghost svg { width: 15px; height: 15px; }
+    .content { padding: 1.6rem 1.8rem 4rem; }
+    .burger { display: none; background: transparent; border: 0; color: var(--text); cursor: pointer; padding: .3rem; } .burger svg { width: 22px; height: 22px; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.4rem; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; box-shadow: var(--shadow); }
+    .kpi .k-label { font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: .5rem; }
+    .kpi .k-label svg { width: 15px; height: 15px; color: var(--accent); }
+    .kpi .k-val { font-size: 1.9rem; font-weight: 700; margin: .5rem 0 .15rem; line-height: 1; }
+    .kpi .k-delta { font-size: .76rem; color: var(--text-muted); } .kpi .k-delta b { color: var(--ok); font-weight: 600; } .kpi .k-delta.down b { color: var(--crit); }
+
+    .cols { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1.2rem; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem 1.3rem; box-shadow: var(--shadow); }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .panel-head h3 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 1.3rem; }
+    .panel-head a { font-size: .78rem; color: var(--accent); text-decoration: none; cursor: pointer; }
+
+    .chart { display: flex; align-items: flex-end; gap: .55rem; height: 160px; padding-top: .5rem; }
+    .chart .bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: .5rem; height: 100%; justify-content: flex-end; }
+    .chart .bar i { width: 100%; max-width: 34px; background: linear-gradient(180deg, var(--accent), rgba(26,138,171,.35)); border-radius: 6px 6px 0 0; display: block; }
+    .chart .bar:nth-child(odd) i { background: linear-gradient(180deg, var(--accent-2), rgba(90,168,41,.3)); }
+    .chart .bar span { font-size: .68rem; color: var(--text-muted); }
+
+    .feed { display: flex; flex-direction: column; }
+    .feed .ev { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px solid var(--border-2); }
+    .feed .ev:last-child { border-bottom: 0; }
+    .ic { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(26,138,171,.1); color: var(--accent); }
+    .ic svg { width: 15px; height: 15px; } .ic.win { background: rgba(90,168,41,.12); color: var(--ok); } .ic.warn { background: rgba(217,138,22,.12); color: var(--warn); } .ic.crit { background: rgba(216,59,64,.12); color: var(--crit); }
+    .feed .txt { font-size: .84rem; line-height: 1.35; align-self: center; } .feed .txt b { font-weight: 600; } .feed .txt small { display: block; color: var(--text-muted); font-size: .72rem; margin-top: 2px; }
+
+    .board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 1rem; overflow-x: auto; padding-bottom: .8rem; }
+    .col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: .9rem; display: flex; flex-direction: column; min-height: 200px; }
+    .col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+    .col-head h4 { font-size: .76rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: .5rem; }
+    .col-head .dot-s { width: 8px; height: 8px; border-radius: 50%; }
+    .deal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .8rem .85rem; margin-bottom: .6rem; cursor: pointer; box-shadow: var(--shadow); }
+    .deal:hover { border-color: var(--accent); } .deal h5 { font-size: .9rem; font-weight: 600; margin-bottom: .35rem; } .deal .co { font-size: .74rem; color: var(--text-muted); margin-bottom: .6rem; }
+    .deal .row { display: flex; align-items: center; justify-content: space-between; } .deal .val { font-size: .9rem; font-weight: 700; color: var(--accent); }
+    .tag { font-size: .64rem; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 5px; background: var(--border-2); color: var(--text-muted); }
+    .pill-avatar { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; display: inline-grid; place-items: center; font-size: .62rem; font-weight: 700; }
+
+    .toolbar { display: flex; align-items: center; gap: .6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .chip { font-size: .78rem; padding: .4rem .8rem; border-radius: 20px; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; background: var(--surface); font-family: inherit; }
+    .chip.on { background: rgba(26,138,171,.1); color: var(--accent); border-color: transparent; font-weight: 600; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); padding: .85rem 1.1rem; border-bottom: 1px solid var(--border); font-weight: 600; background: var(--surface-2); }
+    tbody td { padding: .8rem 1.1rem; border-bottom: 1px solid var(--border-2); font-size: .86rem; }
+    tbody tr:last-child td { border-bottom: 0; } tbody tr:hover { background: var(--surface-2); cursor: pointer; }
+    .cell-name { display: flex; align-items: center; gap: .7rem; } .cell-name b { font-weight: 600; } .cell-name small { display: block; color: var(--text-muted); font-size: .72rem; }
+    .badge { font-size: .68rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+    .badge.lead { background: rgba(217,138,22,.14); color: var(--warn); } .badge.active { background: rgba(90,168,41,.14); color: var(--ok); } .badge.cold { background: var(--border-2); color: var(--text-muted); }
+    .badge.online { background: rgba(90,168,41,.14); color: var(--ok); } .badge.offline { background: rgba(216,59,64,.14); color: var(--crit); }
+    .badge.draft { background: var(--border-2); color: var(--text-muted); } .badge.sent { background: rgba(26,138,171,.14); color: var(--accent); } .badge.won { background: rgba(90,168,41,.14); color: var(--ok); }
+    .stars { color: var(--warn); font-size: .8rem; letter-spacing: 1px; }
+    .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .ccard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem; box-shadow: var(--shadow); cursor: pointer; } .ccard:hover { border-color: var(--accent); }
+    .ccard .top { display: flex; align-items: center; gap: .7rem; margin-bottom: .8rem; }
+    .ccard .logo { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; display: grid; place-items: center; font-weight: 700; }
+    .ccard h4 { font-size: .98rem; } .ccard .sub { font-size: .74rem; color: var(--text-muted); }
+    .ccard .stat { display: flex; gap: 1.2rem; font-size: .78rem; color: var(--text-muted); margin-top: .6rem; padding-top: .7rem; border-top: 1px solid var(--border-2); } .ccard .stat b { display: block; color: var(--text); font-size: .95rem; }
+
+    /* schermi LED */
+    .screen { display: flex; align-items: center; gap: .9rem; }
+    .screen .thumb { width: 52px; height: 34px; border-radius: 6px; background: linear-gradient(135deg,#10212a,#0a3343); border: 1px solid var(--border); position: relative; overflow: hidden; flex: 0 0 52px; }
+    .screen .thumb::after { content:''; position: absolute; inset: 4px; border-radius: 3px; background: repeating-linear-gradient(45deg, rgba(26,138,171,.5) 0 3px, transparent 3px 6px); }
+    .dot { display: inline-flex; align-items: center; gap: .4rem; font-size: .72rem; }
+    .dot::before { content:''; width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+    .dot.online::before { background: var(--ok); box-shadow: 0 0 6px rgba(90,168,41,.6); } .dot.offline::before { background: var(--crit); }
+
+    /* calendario */
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .cal .dow { text-align: center; font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); padding: .3rem 0; }
+    .cal .day { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 8px; min-height: 78px; padding: .4rem; font-size: .72rem; }
+    .cal .day .n { color: var(--text-muted); font-weight: 600; } .cal .day.today { border-color: var(--accent); } .cal .day.today .n { color: var(--accent); }
+    .cal .ap { margin-top: .25rem; font-size: .64rem; background: rgba(26,138,171,.12); color: var(--accent); border-radius: 4px; padding: 1px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal .ap.g { background: rgba(90,168,41,.14); color: var(--ok); } .cal .ap.w { background: rgba(217,138,22,.14); color: var(--warn); }
+
+    /* preventivo righe */
+    .quote { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.4rem; box-shadow: var(--shadow); max-width: 720px; }
+    .qline { display: grid; grid-template-columns: 1fr 70px 90px 90px; gap: .8rem; padding: .6rem 0; border-bottom: 1px solid var(--border-2); font-size: .85rem; align-items: center; }
+    .qline.h { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 600; }
+    .qline .r { text-align: right; } .qtot { display: flex; justify-content: flex-end; gap: 2rem; margin-top: 1rem; font-size: .95rem; } .qtot b { font-size: 1.2rem; color: var(--accent); }
+
+    /* settings */
+    .set-row { display: flex; align-items: center; justify-content: space-between; padding: .9rem 0; border-bottom: 1px solid var(--border-2); font-size: .88rem; }
+    .set-row small { color: var(--text-muted); display: block; font-size: .76rem; margin-top: 2px; }
+    .switch { width: 42px; height: 24px; border-radius: 20px; background: var(--border); position: relative; cursor: pointer; transition: background .2s; flex: 0 0 42px; }
+    .switch::after { content:''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); transition: left .2s; }
+    .switch.on { background: var(--accent); } .switch.on::after { left: 21px; }
+
+    /* drawer */
+    .drawer-bg { position: fixed; inset: 0; background: rgba(20,30,45,.35); z-index: 20; opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .drawer-bg.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; top: 0; right: 0; height: 100%; width: 430px; max-width: 92vw; background: var(--surface); border-left: 1px solid var(--border); z-index: 21; transform: translateX(100%); transition: transform .28s ease; overflow-y: auto; box-shadow: -8px 0 30px rgba(20,30,45,.12); }
+    .drawer.open { transform: translateX(0); }
+    .d-head { padding: 1.4rem 1.4rem 1.2rem; border-bottom: 1px solid var(--border); position: relative; }
+    .d-close { position: absolute; top: 1.1rem; right: 1.1rem; background: transparent; border: 0; color: var(--text-muted); cursor: pointer; font-size: 1.4rem; line-height: 1; }
+    .d-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 1.2rem; margin-bottom: .9rem; }
+    .d-head h3 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 1.6rem; margin-bottom: .15rem; }
+    .d-head .sub { font-size: .82rem; color: var(--text-muted); }
+    .d-actions { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
+    .d-body { padding: 1.3rem 1.4rem; }
+    .d-section { margin-bottom: 1.5rem; } .d-section h4 { font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .7rem; }
+    .d-field { display: flex; align-items: center; gap: .7rem; padding: .5rem 0; font-size: .86rem; border-bottom: 1px solid var(--border-2); }
+    .d-field svg { width: 16px; height: 16px; color: var(--accent); flex: 0 0 16px; } .d-field span { color: var(--text-muted); } .d-field b { margin-left: auto; font-weight: 600; }
+    .note { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: .7rem .8rem; font-size: .82rem; line-height: 1.45; margin-bottom: .6rem; }
+    .note small { display: block; color: var(--text-muted); font-size: .68rem; margin-top: .4rem; }
+    .tabs { display: flex; gap: .3rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+    .tabs button { background: transparent; border: 0; padding: .55rem .7rem; font-size: .8rem; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; font-family: inherit; }
+    .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    @media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) {
+      .app { grid-template-columns: 1fr; }
+      .side { position: fixed; top: 0; left: 0; z-index: 30; width: 256px; height: 100vh; transform: translateX(-100%); transition: transform .26s ease; box-shadow: var(--shadow); }
+      .side.open { transform: translateX(0); box-shadow: 0 0 0 100vmax rgba(20,30,45,.35); }
+      .burger { display: inline-flex; } .topbar h2 { font-size: 1.35rem; } .search { display: none; }
+      .topbar, .content { padding-left: 1.1rem; padding-right: 1.1rem; }
+      table { min-width: 600px; } .table-wrap { overflow-x: auto; } .cal .day { min-height: 56px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side" id="side">
+      <div class="brand">Vero<em>CRM</em><small>VeroLED · Gestione clienti</small></div>
+      <nav class="nav" id="nav">
+        <div class="grp">Generale</div>
+        <a data-sec="dashboard" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</a>
+        <a data-sec="pipeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="1.4" fill="currentColor"/><circle cx="14" cy="12" r="1.4" fill="currentColor"/><circle cx="11" cy="18" r="1.4" fill="currentColor"/></svg>Pipeline <span class="count">12</span></a>
+        <div class="grp">Anagrafiche</div>
+        <a data-sec="contatti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>Contatti <span class="count">248</span></a>
+        <a data-sec="aziende"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/><path d="M9 9v.01M9 12v.01M9 15v.01"/></svg>Aziende <span class="count">96</span></a>
+        <div class="grp">Vendite</div>
+        <a data-sec="preventivi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>Preventivi <span class="count">9</span></a>
+        <a data-sec="schermi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Schermi LED <span class="count">14</span></a>
+        <div class="grp">Operativo</div>
+        <a data-sec="attivita"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Attività <span class="count">7</span></a>
+        <a data-sec="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Report</a>
+        <a data-sec="impostazioni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.7 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3 1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9.4a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>Impostazioni</a>
+      </nav>
+      <div class="side-foot"><div class="avatar">VL</div><div class="who">VeroLED Srl<small>Amministratore</small></div></div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="burger" id="burger" aria-label="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        <h2 id="sec-title">Dashboard</h2>
+        <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" placeholder="Cerca contatti, aziende, trattative…" /></div>
+        <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Nuovo</button>
+      </div>
+
+      <div class="content">
+        <!-- DASHBOARD -->
+        <section data-view="dashboard">
+          <div class="kpis">
+            <div class="kpi"><div class="k-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Contatti</div><div class="k-val">248</div><div class="k-delta"><b>+18</b> questo mese</div></div>
+            <div class="kpi"><div class="k-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M3 12h18M3 18h18"/></svg>Trattative aperte</div><div class="k-val">12</div><div class="k-delta"><b>€ 84.500</b> potenziale</div></div>
+            <div class="kpi"><div class="k-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6L9 17l-5-5"/></svg>Vinte (mese)</div><div class="k-val">6</div><div class="k-delta"><b>€ 31.200</b> fatturato</div></div>
+            <div class="kpi"><div class="k-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>Schermi online</div><div class="k-val">12/14</div><div class="k-delta down"><b>2</b> offline</div></div>
+          </div>
+          <div class="cols">
+            <div class="panel"><div class="panel-head"><h3>Fatturato per mese</h3><a data-go="report">Report</a></div><div class="chart" id="chart"></div></div>
+            <div class="panel"><div class="panel-head"><h3>Attività recente</h3><a data-go="attivita">Tutte</a></div>
+              <div class="feed">
+                <div class="ev"><div class="ic win"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div><div class="txt"><b>Trattativa vinta</b> — Comune di Lecce<small>2 ore fa · € 14.000</small></div></div>
+                <div class="ev"><div class="ic crit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/></svg></div><div class="txt"><b>Schermo offline</b> — Hotel Riviera, totem<small>1 ora fa · ticket aperto</small></div></div>
+                <div class="ev"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div class="txt">Chiamata con <b>Sport Center Bari</b><small>4 ore fa · esito positivo</small></div></div>
+                <div class="ev"><div class="ic warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="txt">Preventivo in scadenza — <b>Hotel Riviera</b><small>Scade domani</small></div></div>
+                <div class="ev"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></div><div class="txt">Nuovo lead — <b>Farmacia San Marco</b><small>Ieri · da web form</small></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PIPELINE -->
+        <section data-view="pipeline" class="hidden">
+          <p style="color:var(--text-muted);font-size:.85rem;margin:0 0 1.2rem">Valore totale pipeline: <b style="color:var(--accent)">€ 84.500</b> · 12 trattative</p>
+          <div class="board" id="board"></div>
+        </section>
+
+        <!-- CONTATTI -->
+        <section data-view="contatti" class="hidden">
+          <div class="toolbar">
+            <button class="chip on">Tutti</button><button class="chip">Clienti attivi</button><button class="chip">Lead</button><button class="chip">Freddi</button>
+            <span style="flex:1"></span>
+            <button class="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3z"/></svg>Filtri</button>
+            <button class="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Esporta CSV</button>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Contatto</th><th>Azienda</th><th>Stato</th><th>Valore</th><th>Priorità</th><th>Ultimo contatto</th></tr></thead><tbody id="tbody"></tbody></table></div>
+        </section>
+
+        <!-- AZIENDE -->
+        <section data-view="aziende" class="hidden">
+          <div class="toolbar"><button class="chip on">Tutte</button><button class="chip">Clienti</button><button class="chip">Prospect</button><button class="chip">PA / Comuni</button></div>
+          <div class="grid-cards" id="companies"></div>
+        </section>
+
+        <!-- PREVENTIVI -->
+        <section data-view="preventivi" class="hidden">
+          <div class="cols" style="grid-template-columns:1fr 1.2fr">
+            <div>
+              <div class="panel-head"><h3 style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.3rem">Preventivi</h3><a class="btn" style="text-decoration:none">+ Nuovo</a></div>
+              <div class="table-wrap"><table><thead><tr><th>N° / Cliente</th><th>Importo</th><th>Stato</th></tr></thead><tbody id="quotes"></tbody></table></div>
+            </div>
+            <div>
+              <div class="panel-head"><h3 style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.3rem">Anteprima — #2026-014</h3><a>Genera PDF</a></div>
+              <div class="quote">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1.2rem">
+                  <div><div class="brand" style="padding:0">Vero<em>LED</em></div><small style="color:var(--text-muted)">Sport Center Bari · Mario Rossi</small></div>
+                  <div style="text-align:right;font-size:.78rem;color:var(--text-muted)">N. 2026-014<br>04/06/2026</div>
+                </div>
+                <div class="qline h"><span>Descrizione</span><span class="r">Q.tà</span><span class="r">Prezzo</span><span class="r">Totale</span></div>
+                <div class="qline"><span>Modulo LED esterno P4 · 6×3 m (18 m²)</span><span class="r">18</span><span class="r">€ 780</span><span class="r">€ 14.040</span></div>
+                <div class="qline"><span>Sistema controllo NovaStar TB60</span><span class="r">1</span><span class="r">€ 1.200</span><span class="r">€ 1.200</span></div>
+                <div class="qline"><span>Struttura + installazione</span><span class="r">1</span><span class="r">€ 2.800</span><span class="r">€ 2.800</span></div>
+                <div class="qline"><span>Contratto gestione contenuti (12 mesi)</span><span class="r">1</span><span class="r">€ 460</span><span class="r">€ 460</span></div>
+                <div class="qtot"><span style="color:var(--text-muted)">Imponibile</span><span>€ 18.500</span></div>
+                <div class="qtot"><span style="color:var(--text-muted)">IVA 22%</span><span>€ 4.070</span></div>
+                <div class="qtot"><span>Totale</span><b>€ 22.570</b></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCHERMI LED (aggancio portale) -->
+        <section data-view="schermi" class="hidden">
+          <p style="color:var(--text-muted);font-size:.85rem;margin:0 0 1.2rem">Schermi installati presso i clienti — dati live dal portale <b>Fleet Monitor PRO</b> (<code>/api/screens</code>). 12 online · 2 offline.</p>
+          <div class="table-wrap"><table><thead><tr><th>Schermo</th><th>Cliente</th><th>Modello</th><th>Stato</th><th>Luminosità</th><th></th></tr></thead><tbody id="screens"></tbody></table></div>
+        </section>
+
+        <!-- ATTIVITÀ + CALENDARIO -->
+        <section data-view="attivita" class="hidden">
+          <div class="cols">
+            <div class="panel"><div class="panel-head"><h3>Calendario · Giugno 2026</h3><a>+ Evento</a></div><div class="cal" id="cal"></div></div>
+            <div class="panel"><div class="panel-head"><h3>Da fare oggi</h3></div>
+              <div class="feed">
+                <div class="ev"><div class="ic warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="txt"><b>Richiamare</b> Sport Center Bari<small>14:30 · trattativa LED esterno</small></div></div>
+                <div class="ev"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg></div><div class="txt"><b>Inviare preventivo</b> Hotel Riviera<small>16:00</small></div></div>
+                <div class="ev"><div class="ic crit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><div class="txt"><b>Assistenza</b> schermo offline — Hotel Riviera<small>Ticket #58 · urgente</small></div></div>
+                <div class="ev"><div class="ic win"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div><div class="txt"><b>Sopralluogo</b> Comune di Lecce<small>Completato · 11:00</small></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- REPORT -->
+        <section data-view="report" class="hidden">
+          <div class="kpis">
+            <div class="kpi"><div class="k-label">Fatturato YTD</div><div class="k-val">€ 312k</div><div class="k-delta"><b>+24%</b> anno su anno</div></div>
+            <div class="kpi"><div class="k-label">Ticket medio</div><div class="k-val">€ 5.200</div><div class="k-delta"><b>+8%</b></div></div>
+            <div class="kpi"><div class="k-label">Ciclo vendita</div><div class="k-val">34 gg</div><div class="k-delta">media chiusura</div></div>
+            <div class="kpi"><div class="k-label">Win rate</div><div class="k-val">42%</div><div class="k-delta down"><b>-3%</b></div></div>
+          </div>
+          <div class="cols">
+            <div class="panel"><div class="panel-head"><h3>Trattative per fase</h3></div><div class="chart" id="chart2"></div></div>
+            <div class="panel"><div class="panel-head"><h3>Per commerciale</h3></div>
+              <div class="feed">
+                <div class="ev"><div class="pill-avatar" style="width:30px;height:30px">AB</div><div class="txt" style="flex:1"><b>Antonio B.</b> — 8 trattative<small>€ 142.000 · win 48%</small></div></div>
+                <div class="ev"><div class="pill-avatar" style="width:30px;height:30px">GV</div><div class="txt" style="flex:1"><b>Giulia V.</b> — 6 trattative<small>€ 98.000 · win 39%</small></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- IMPOSTAZIONI -->
+        <section data-view="impostazioni" class="hidden">
+          <div class="cols">
+            <div class="panel"><div class="panel-head"><h3>Generali</h3></div>
+              <div class="set-row"><div>Notifiche email<small>Promemoria scadenze e nuovi lead</small></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><div>Sincronizza schermi dal portale<small>Aggancio live a Fleet Monitor PRO</small></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row"><div>Alert schermo offline → crea ticket<small>Apre automaticamente un'attività di assistenza</small></div><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+              <div class="set-row" style="border:0"><div>Tema scuro<small>Coerente col portale Fleet Monitor</small></div><div class="switch" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+            <div class="panel"><div class="panel-head"><h3>Team & permessi</h3><a>+ Invita</a></div>
+              <div class="feed">
+                <div class="ev"><div class="pill-avatar" style="width:30px;height:30px">VL</div><div class="txt" style="flex:1"><b>VeroLED Srl</b><small>Amministratore</small></div></div>
+                <div class="ev"><div class="pill-avatar" style="width:30px;height:30px">AB</div><div class="txt" style="flex:1"><b>Antonio B.</b><small>Commerciale</small></div></div>
+                <div class="ev"><div class="pill-avatar" style="width:30px;height:30px">GV</div><div class="txt" style="flex:1"><b>Giulia V.</b><small>Commerciale</small></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- DRAWER -->
+  <div class="drawer-bg" id="drawerBg"></div>
+  <aside class="drawer" id="drawer">
+    <div class="d-head">
+      <button class="d-close" id="dClose">&times;</button>
+      <div class="d-avatar" id="dInit">MR</div>
+      <h3 id="dName">Mario Rossi</h3>
+      <div class="sub" id="dSub">Direttore — Sport Center Bari</div>
+      <div class="d-actions">
+        <button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Chiama</button>
+        <button class="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>Email</button>
+        <button class="ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+      </div>
+    </div>
+    <div class="d-body">
+      <div class="tabs"><button class="on">Panoramica</button><button>Trattative</button><button>Schermi</button><button>Note</button></div>
+      <div class="d-section"><h4>Anagrafica</h4>
+        <div class="d-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg><span>Email</span><b>m.rossi@sportcenter.it</b></div>
+        <div class="d-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Telefono</span><b>+39 080 123 4567</b></div>
+        <div class="d-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Sede</span><b>Bari (BA)</b></div>
+        <div class="d-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2v20M2 12h20"/></svg><span>P.IVA</span><b>06789012345</b></div>
+      </div>
+      <div class="d-section"><h4>Trattativa in corso</h4>
+        <div class="deal" style="cursor:default"><h5>LED wall esterno P4 — 6×3 m</h5><div class="co">Fase: Proposta inviata</div><div class="row"><span class="val">€ 18.500</span><span class="tag">prob. 60%</span></div></div>
+      </div>
+      <div class="d-section"><h4>Schermi installati</h4>
+        <div class="d-field"><span class="dot online">Insegna ingresso P3</span><b>online</b></div>
+        <div class="d-field"><span class="dot offline">Totem hall P2.5</span><b style="color:var(--crit)">offline</b></div>
+      </div>
+      <div class="d-section"><h4>Note recenti</h4>
+        <div class="note">Interessato a gestione contenuti da remoto. Installazione entro fine mese.<small>28 mag · da te</small></div>
+        <div class="note">Budget confermato dalla proprietà. Da inviare preventivo dettagliato.<small>25 mag · da te</small></div>
+      </div>
+    </div>
+  </aside>
+
+  <script is:inline>
+    const titles = { dashboard:'Dashboard', pipeline:'Pipeline', contatti:'Contatti', aziende:'Aziende', preventivi:'Preventivi', schermi:'Schermi LED', attivita:'Attività', report:'Report', impostazioni:'Impostazioni' };
+    const side = document.getElementById('side');
+    function show(sec){
+      document.querySelectorAll('[data-view]').forEach(v => v.classList.toggle('hidden', v.dataset.view !== sec));
+      document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.sec === sec));
+      document.getElementById('sec-title').textContent = titles[sec] || sec;
+      side.classList.remove('open'); window.scrollTo(0,0);
+    }
+    document.getElementById('nav').addEventListener('click', e => { const a = e.target.closest('a'); if(a) show(a.dataset.sec); });
+    document.querySelectorAll('[data-go]').forEach(a => a.onclick = () => show(a.dataset.go));
+    document.getElementById('burger').onclick = () => side.classList.toggle('open');
+
+    const init = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+    // charts
+    const c1 = [{m:'Gen',v:38},{m:'Feb',v:52},{m:'Mar',v:44},{m:'Apr',v:61},{m:'Mag',v:73},{m:'Giu',v:58}];
+    const m1 = Math.max(...c1.map(d=>d.v));
+    document.getElementById('chart').innerHTML = c1.map(d=>`<div class="bar"><i style="height:${d.v/m1*100}%"></i><span>${d.m}</span></div>`).join('');
+    const c2 = [{m:'Lead',v:24},{m:'Qualif.',v:16},{m:'Proposta',v:9},{m:'Negoz.',v:5},{m:'Vinta',v:6}];
+    const m2 = Math.max(...c2.map(d=>d.v));
+    document.getElementById('chart2').innerHTML = c2.map(d=>`<div class="bar"><i style="height:${d.v/m2*100}%"></i><span>${d.m}</span></div>`).join('');
+
+    // kanban
+    const stages = [
+      { name:'Lead', dot:'#d98a16', deals:[{t:'Totem ingresso',co:'Hotel Riviera',v:'€ 6.200',who:'AB',tag:'nuovo'},{t:'Insegna LED',co:'Farmacia San Marco',v:'€ 3.400',who:'GV',tag:'web'}]},
+      { name:'Qualificato', dot:'#1a8aab', deals:[{t:'Schermo vetrina',co:'Centro Le Vele',v:'€ 9.800',who:'AB',tag:''},{t:'LED indoor P2.5',co:'Studio Dentistico',v:'€ 4.100',who:'GV',tag:''}]},
+      { name:'Proposta', dot:'#1a8aab', deals:[{t:'LED wall esterno',co:'Sport Center Bari',v:'€ 18.500',who:'AB',tag:'caldo'}]},
+      { name:'Negoziazione', dot:'#5aa829', deals:[{t:'Maxischermo eventi',co:'Pro Loco Otranto',v:'€ 22.000',who:'GV',tag:''}]},
+      { name:'Vinta', dot:'#5aa829', deals:[{t:'LED piazza',co:'Comune di Lecce',v:'€ 14.000',who:'AB',tag:'firmato'}]},
+    ];
+    document.getElementById('board').innerHTML = stages.map(s=>`
+      <div class="col"><div class="col-head"><h4><span class="dot-s" style="background:${s.dot}"></span>${s.name}</h4><span style="font-size:.72rem;color:var(--text-muted)">${s.deals.length}</span></div>
+      ${s.deals.map(d=>`<div class="deal" data-name="${d.co}" data-role="Trattativa" data-co="${d.t}"><h5>${d.t}</h5><div class="co">${d.co}</div><div class="row"><span class="val">${d.v}</span><span style="display:flex;align-items:center;gap:.4rem">${d.tag?`<span class="tag">${d.tag}</span>`:''}<span class="pill-avatar">${d.who}</span></span></div></div>`).join('')}</div>`).join('');
+
+    // contatti
+    const contacts = [
+      {n:'Mario Rossi',r:'Direttore',co:'Sport Center Bari',st:'lead',stl:'Lead',v:'€ 18.500',p:3,d:'2 ore fa'},
+      {n:'Lucia Bianchi',r:'Titolare',co:'Hotel Riviera',st:'lead',stl:'Lead',v:'€ 6.200',p:2,d:'Ieri'},
+      {n:'Giuseppe Verdi',r:'Resp. acquisti',co:'Comune di Lecce',st:'active',stl:'Cliente',v:'€ 14.000',p:3,d:'Oggi'},
+      {n:'Anna Esposito',r:'Marketing',co:'Centro Le Vele',st:'active',stl:'Cliente',v:'€ 9.800',p:2,d:'3 giorni fa'},
+      {n:'Marco Greco',r:'Farmacista',co:'Farmacia San Marco',st:'lead',stl:'Lead',v:'€ 3.400',p:1,d:'Ieri'},
+      {n:'Sara Conti',r:'Event manager',co:'Pro Loco Otranto',st:'active',stl:'Cliente',v:'€ 22.000',p:3,d:'5 giorni fa'},
+      {n:'Davide Russo',r:'Titolare',co:'Studio Dentistico',st:'cold',stl:'Freddo',v:'€ 4.100',p:1,d:'2 sett. fa'},
+    ];
+    const stars = p => '★'.repeat(p) + '<span style="color:var(--border)">'+'★'.repeat(3-p)+'</span>';
+    document.getElementById('tbody').innerHTML = contacts.map(c=>`
+      <tr data-name="${c.n}" data-role="${c.r}" data-co="${c.co}">
+        <td><div class="cell-name"><span class="pill-avatar" style="width:30px;height:30px;font-size:.7rem">${init(c.n)}</span><span><b>${c.n}</b><small>${c.r}</small></span></div></td>
+        <td>${c.co}</td><td><span class="badge ${c.st}">${c.stl}</span></td>
+        <td style="color:var(--accent);font-weight:600">${c.v}</td><td class="stars">${stars(c.p)}</td><td style="color:var(--text-muted)">${c.d}</td></tr>`).join('');
+
+    // aziende
+    const companies = [
+      {n:'Sport Center Bari',t:'Cliente',c:'4 contatti',d:'2 trattative',v:'€ 18.500'},
+      {n:'Comune di Lecce',t:'PA',c:'3 contatti',d:'1 schermo',v:'€ 14.000'},
+      {n:'Hotel Riviera',t:'Prospect',c:'2 contatti',d:'2 schermi',v:'€ 6.200'},
+      {n:'Centro Le Vele',t:'Cliente',c:'5 contatti',d:'3 schermi',v:'€ 9.800'},
+      {n:'Pro Loco Otranto',t:'Cliente',c:'2 contatti',d:'1 trattativa',v:'€ 22.000'},
+      {n:'Farmacia San Marco',t:'Prospect',c:'1 contatto',d:'lead',v:'€ 3.400'},
+    ];
+    document.getElementById('companies').innerHTML = companies.map(c=>`
+      <div class="ccard" data-name="${c.n}" data-role="${c.t}" data-co="${c.c}">
+        <div class="top"><div class="logo">${init(c.n)}</div><div><h4>${c.n}</h4><div class="sub">${c.t}</div></div></div>
+        <div class="stat"><div><b>${c.c.split(' ')[0]}</b>contatti</div><div><b>${c.v}</b>valore</div></div>
+      </div>`).join('');
+
+    // preventivi
+    const quotes = [
+      {n:'2026-014',co:'Sport Center Bari',v:'€ 22.570',st:'sent',stl:'Inviato'},
+      {n:'2026-013',co:'Centro Le Vele',v:'€ 11.956',st:'won',stl:'Accettato'},
+      {n:'2026-012',co:'Hotel Riviera',v:'€ 7.564',st:'draft',stl:'Bozza'},
+      {n:'2026-011',co:'Pro Loco Otranto',v:'€ 26.840',st:'sent',stl:'Inviato'},
+    ];
+    document.getElementById('quotes').innerHTML = quotes.map(q=>`
+      <tr><td><div class="cell-name"><span><b>#${q.n}</b><small>${q.co}</small></span></div></td>
+      <td style="font-weight:600">${q.v}</td><td><span class="badge ${q.st}">${q.stl}</span></td></tr>`).join('');
+
+    // schermi LED (mock di /api/screens)
+    const screens = [
+      {n:'Insegna ingresso P3',co:'Sport Center Bari',m:'NovaStar TB60',on:true,b:80},
+      {n:'Totem hall P2.5',co:'Hotel Riviera',m:'NovaStar TB40',on:false,b:0},
+      {n:'LED piazza P4',co:'Comune di Lecce',m:'NovaStar TB60',on:true,b:65},
+      {n:'Schermo vetrina P2.5',co:'Centro Le Vele',m:'NovaStar TB30',on:true,b:90},
+      {n:'Maxischermo P5',co:'Pro Loco Otranto',m:'NovaStar TB60',on:true,b:70},
+    ];
+    document.getElementById('screens').innerHTML = screens.map(s=>`
+      <tr><td><div class="screen"><div class="thumb"></div><b>${s.n}</b></div></td>
+      <td>${s.co}</td><td style="color:var(--text-muted)">${s.m}</td>
+      <td><span class="badge ${s.on?'online':'offline'}">${s.on?'online':'offline'}</span></td>
+      <td>${s.on?s.b+'%':'—'}</td>
+      <td><a class="ghost" style="text-decoration:none" href="/">apri nel portale →</a></td></tr>`).join('');
+
+    // calendario giugno 2026 (1 giu = lunedì)
+    const events = {3:[['Sopralluogo Lecce','g']],4:[['Richiamo Sport C.','w'],['Preventivo Riviera','']],11:[['Demo Le Vele','']],12:[['Firma Farmacia','g']],18:[['Installazione Otranto','']],25:[['Manutenzione','w']]};
+    const dows = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+    let cal = dows.map(d=>`<div class="dow">${d}</div>`).join('');
+    for(let d=1; d<=30; d++){
+      const ev = (events[d]||[]).map(e=>`<div class="ap ${e[1]}">${e[0]}</div>`).join('');
+      cal += `<div class="day${d===4?' today':''}"><div class="n">${d}</div>${ev}</div>`;
+    }
+    document.getElementById('cal').innerHTML = cal;
+
+    // drawer
+    const drawer = document.getElementById('drawer'), bg = document.getElementById('drawerBg');
+    const openDrawer = (name, role, co) => {
+      document.getElementById('dName').textContent = name; document.getElementById('dInit').textContent = init(name);
+      document.getElementById('dSub').textContent = role + ' — ' + co;
+      drawer.classList.add('open'); bg.classList.add('open');
+    };
+    const closeDrawer = () => { drawer.classList.remove('open'); bg.classList.remove('open'); };
+    document.body.addEventListener('click', e => {
+      const el = e.target.closest('[data-name]'); if(el && !e.target.closest('a')) openDrawer(el.dataset.name, el.dataset.role, el.dataset.co);
+    });
+    document.getElementById('dClose').onclick = closeDrawer; bg.onclick = closeDrawer;
+    document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
+  </script>
+</body>
+</html>
